@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Calendar, CheckSquare, MessageSquare,
   Moon, Users, Search, Globe, Bell, Hash, Smile, Paperclip,
   Image as ImageIcon, CheckCircle2, Circle, Languages, Sparkles,
+  ChevronLeft, ChevronRight, Plus, X, RefreshCw, ArrowRight,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -307,7 +308,7 @@ function GoldenWindowBar() {
       <div className="relative h-12 rounded-full bg-[#131820] border border-[#303644]">
         <div
           className="absolute top-0 h-full bg-white rounded-full flex items-center justify-between px-6"
-          style={{ left: "28%", right: "22%" }}
+          style={{ left: "0%", right: "38%" }}
         >
           <div className="flex items-center">
             {GOLDEN_LEFT.map((c, i) => <Chip key={i} {...c} />)}
@@ -330,15 +331,15 @@ function GoldenWindowBar() {
   );
 }
 
-type View = "dashboard" | "chat";
+type View = "dashboard" | "chat" | "calendar" | "while-asleep" | "community";
 
 const NAV_ITEMS: { icon: typeof LayoutDashboard; label: string; view: View | null; badge: string | null }[] = [
-  { icon: LayoutDashboard, label: "Dashboard",    view: "dashboard", badge: null },
-  { icon: Calendar,        label: "Calendar",     view: null,        badge: null },
-  { icon: CheckSquare,     label: "Task List",    view: null,        badge: null },
-  { icon: MessageSquare,   label: "Work Chat",    view: "chat",      badge: null },
-  { icon: Moon,            label: "While Asleep", view: null,        badge: "3"  },
-  { icon: Users,           label: "Community",    view: null,        badge: null },
+  { icon: LayoutDashboard, label: "Dashboard",    view: "dashboard",    badge: null },
+  { icon: Calendar,        label: "Calendar",     view: "calendar",     badge: null },
+  { icon: CheckSquare,     label: "Task List",    view: null,           badge: null },
+  { icon: MessageSquare,   label: "Work Chat",    view: "chat",         badge: null },
+  { icon: Moon,            label: "While Asleep", view: "while-asleep", badge: "3"  },
+  { icon: Users,           label: "Community",    view: "community",   badge: null },
 ];
 
 // Shared app chrome — mirrors Figma node 813:26275 (yellow logo, coloured
@@ -1249,19 +1250,764 @@ function GlobeView() {
   );
 }
 
+// ── Calendar screen ───────────────────────────────────────────────────────────
+// Mirrors Figma node 410:9029 ("캘린더"). Rendered in place of the globe when
+// the "Calendar" nav item is active.
+
+const CATEGORIES = [
+  { label: "Work Tasks",  color: "#4d9fff" },
+  { label: "Personal",    color: "#8b7fe8" },
+  { label: "Milestones",  color: "#00d4b4" },
+  { label: "Holidays",    color: "#fd6e8d" },
+  { label: "Team Events", color: "#fff4a1" },
+];
+const UPCOMING_EVENTS = [
+  { title: "Board Presentation", date: "Jun 24" },
+  { title: "Team Offsite Day 1", date: "Jun 25" },
+  { title: "Team Offsite Day 2", date: "Jun 26" },
+  { title: "Birthday Dinner",    date: "Jun 27" },
+  { title: "Month Wrap-up",      date: "Jun 30" },
+];
+type CalEvent = { title: string; color: string };
+const CAL_EVENTS: Record<number, CalEvent[]> = {
+  3:  [{ title: "Design Review",      color: "#4d9fff" }],
+  4:  [{ title: "Team Standup",       color: "#fff4a1" }],
+  9:  [{ title: "1:1 with Sarah",     color: "#fad4ea" }],
+  10: [{ title: "Q2 OKR Review",      color: "#4d9fff" }],
+  11: [{ title: "Dentist Appt.",      color: "#657084" }],
+  13: [{ title: "Orbit v2.0 Launch",  color: "#00d4b4" }],
+  16: [{ title: "Engineering Arch.",  color: "#00d4b4" }],
+  19: [{ title: "Dentist Appt.",      color: "#657084" }],
+  20: [{ title: "Dentist Appt.",      color: "#fff4a1" }],
+  23: [{ title: "Strategy Workshop",  color: "#00d4b4" }],
+  24: [{ title: "Board Presentation", color: "#8b7fe8" }],
+  25: [{ title: "Team Offsite Day 1", color: "#00d4b4" }],
+  26: [{ title: "Team Offsite Day 2", color: "#00d4b4" }],
+  30: [{ title: "Month Wrap-up",      color: "#00d4b4" }],
+};
+
+// Builds a Sun-first month grid, padded with the surrounding month's days so
+// every week row has 7 cells (a fixed June-2026-starts-on-Monday layout — this
+// is mock prototype data, not a live calendar).
+function buildMonthWeeks(firstWeekday: number, daysInMonth: number, prevMonthDays: number) {
+  const cells: { day: number; inMonth: boolean }[] = [];
+  for (let i = 0; i < firstWeekday; i++) cells.push({ day: prevMonthDays - firstWeekday + 1 + i, inMonth: false });
+  for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, inMonth: true });
+  let next = 1;
+  while (cells.length % 7 !== 0) cells.push({ day: next++, inMonth: false });
+  const weeks: (typeof cells)[] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  return weeks;
+}
+const JUNE_WEEKS = buildMonthWeeks(1, 30, 31);
+
+const TEAM_TIMEZONE = [
+  { initials: "SP", name: "Soo-Yeon Park", tz: "KST",  city: "Korea",   time: "11:41 PM", status: "Off hours" },
+  { initials: "PK", name: "Paulo Kim",     tz: "EDT",  city: "USA",     time: "07:41 AM", status: "Early"     },
+  { initials: "LF", name: "Lena Fischer",  tz: "CEST", city: "Germany", time: "01:41 PM", status: "Working"   },
+  { initials: "OK", name: "Omar Khalil",   tz: "GST",  city: "UAE",     time: "03:41 PM", status: null        },
+  { initials: "AD", name: "Amara Diallo",  tz: "WAT",  city: "Nigeria", time: "12:41 PM", status: null        },
+];
+const KEY_EVENTS = [
+  { title: "Orbit v2.0 Launch",  date: "Jun 18"    },
+  { title: "Board Presentation", date: "Jun 24"    },
+  { title: "Team Offsite",       date: "Jun 25-26" },
+  { title: "Month Wrap-up",      date: "Jun 30"    },
+];
+const HOLIDAYS = [
+  { flag: "🇺🇸", name: "Memorial Day", date: "Jun 1"  },
+  { flag: "🇰🇷", name: "현충일",       date: "Jun 6"  },
+  { flag: "🇺🇸", name: "Father's Day", date: "Jun 21" },
+  { flag: "🇺🇸", name: "Juneteenth",   date: "Jun 19" },
+];
+
+function CalendarView() {
+  return (
+    <div
+      className="absolute flex overflow-hidden rounded-[20px] border border-[#2b2c2d]"
+      style={{ top: 128, left: 240, right: 312, bottom: 16, background: "#0a0f15", zIndex: 15 }}
+    >
+      <div
+        className="flex flex-col gap-4 shrink-0 overflow-y-auto p-4"
+        style={{ width: 208, borderRight: "1px solid rgba(255,255,255,0.07)" }}
+      >
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[14px] font-semibold text-[#e5eaf4]">JUN 2026</span>
+            <div className="flex items-center gap-2 text-[#8993a5]">
+              <ChevronLeft size={14} />
+              <ChevronRight size={14} />
+            </div>
+          </div>
+          <div className="grid grid-cols-7 gap-y-1 text-center">
+            {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+              <span key={i} className="text-[11px] font-semibold text-[#657084]">{d}</span>
+            ))}
+            {JUNE_WEEKS.flat().map((c, i) => (
+              <span
+                key={i}
+                className="flex items-center justify-center text-[11px] rounded-full mx-auto"
+                style={{
+                  width: 20, height: 20,
+                  color: c.inMonth ? "#e5eaf4" : "#3a4152",
+                  background: c.inMonth && c.day === 23 ? "#00d4b4" : "transparent",
+                }}
+              >
+                {c.day}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-semibold tracking-[0.5px] text-[#657084]">CATEGORIES</span>
+          {CATEGORIES.map((c) => (
+            <div key={c.label} className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: c.color }} />
+              <span className="text-[13px] text-[#bfc7d4]">{c.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-semibold tracking-[0.5px] text-[#657084]">UPCOMING</span>
+          {UPCOMING_EVENTS.map((e) => (
+            <div key={e.title} className="flex items-start gap-2">
+              <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: "#fff4a1" }} />
+              <div>
+                <p className="text-[12px] font-medium text-[#e5eaf4] leading-tight">{e.title}</p>
+                <p className="text-[10px] text-[#657084]">{e.date}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-1 min-w-0 flex-col p-4 gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[20px] font-semibold text-[#e8edf8]">June 2026</span>
+            <ChevronLeft size={16} color="#657084" />
+            <ChevronRight size={16} color="#657084" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-full border overflow-hidden" style={{ borderColor: "#303644" }}>
+              {["Month", "Week", "Day"].map((t) => (
+                <span
+                  key={t}
+                  className="px-3 py-1.5 text-[12px] font-semibold"
+                  style={{ background: t === "Month" ? "#fff4a1" : "transparent", color: t === "Month" ? "#0a0f15" : "#bfc7d4" }}
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+            <span className="rounded-full border px-3 py-1.5 text-[12px] font-semibold text-[#bfc7d4]" style={{ borderColor: "#303644" }}>Today</span>
+            <span className="rounded-full border px-3 py-1.5 text-[12px] font-semibold text-[#bfc7d4]" style={{ borderColor: "#303644" }}>🌐 KST +09:00</span>
+            <button className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold text-[#0a0f15]" style={{ background: "#fff4a1" }}>
+              <Plus size={12} /> Add Event
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 text-[11px] font-semibold text-[#657084]">
+          {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => <span key={d} className="px-2 py-1">{d}</span>)}
+        </div>
+        <div className="flex-1 grid gap-px overflow-hidden rounded-lg" style={{ background: "rgba(255,255,255,0.06)", gridTemplateRows: `repeat(${JUNE_WEEKS.length}, 1fr)` }}>
+          {JUNE_WEEKS.map((week, wi) => (
+            <div key={wi} className="grid grid-cols-7 gap-px">
+              {week.map((c, ci) => (
+                <div key={ci} className="flex flex-col gap-1 p-1.5 overflow-hidden" style={{ background: "#0d1420", opacity: c.inMonth ? 1 : 0.4 }}>
+                  <span className="text-[11px]" style={{ color: c.inMonth ? "#bfc7d4" : "#4e5669" }}>{c.day}</span>
+                  {c.inMonth && CAL_EVENTS[c.day]?.map((ev) => (
+                    <span key={ev.title} className="truncate rounded px-1 py-0.5 text-[10px] font-medium" style={{ background: ev.color + "33", color: ev.color }}>
+                      {ev.title}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CalendarRightPanel() {
+  return (
+    <aside
+      className="absolute flex flex-col rounded-[20px] border border-[#2b2c2d] overflow-hidden overflow-y-auto"
+      style={{ top: 128, right: 16, bottom: 16, width: 280, background: "rgba(26,27,29,0.92)", backdropFilter: "blur(16px)", zIndex: 20, pointerEvents: "auto" }}
+    >
+      <div className="flex items-center justify-between border-b border-[rgba(77,159,255,0.12)] px-4 py-4">
+        <span className="text-white text-[16px] font-semibold">TEAM TIMEZONE</span>
+        <span className="flex items-center gap-1 text-[10px] font-semibold text-[#4ade80]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80]" /> LIVE
+        </span>
+      </div>
+      <div className="flex flex-col">
+        {TEAM_TIMEZONE.map((m, i) => (
+          <div key={i} className="flex items-center justify-between px-4 py-3 border-b border-[rgba(77,159,255,0.06)]">
+            <div className="flex items-center gap-3 min-w-0">
+              <Avatar initials={m.initials} color={AVATAR_COLORS[i % AVATAR_COLORS.length]} online={true} />
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-[#e8edf8] truncate">{m.name}</p>
+                <p className="text-[11px] text-[#657084]">{m.tz} · {m.city}</p>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-[13px] font-semibold text-[#e8edf8]">{m.time}</p>
+              {m.status && <p className="text-[10px] text-[#5a7099]">{m.status}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mx-4 my-3 rounded-xl px-3 py-2 text-[11px] font-semibold text-[#0a0f15]" style={{ background: "#00d4b4" }}>
+        09:00–10:00 UTC · Best meeting slot
+      </div>
+      <div className="px-4 py-2">
+        <p className="text-[11px] font-semibold tracking-[0.5px] text-[#657084] mb-2">UPCOMING KEY EVENTS</p>
+        <div className="flex flex-col gap-2">
+          {KEY_EVENTS.map((e) => (
+            <div key={e.title} className="flex items-center justify-between">
+              <span className="text-[12px] text-[#e8edf8]">{e.title}</span>
+              <span className="text-[11px] text-[#657084]">{e.date}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="px-4 py-3">
+        <p className="text-[11px] font-semibold tracking-[0.5px] text-[#657084] mb-2">HOLIDAYS THIS MONTH</p>
+        <div className="flex flex-col gap-2">
+          {HOLIDAYS.map((h) => (
+            <div key={h.name} className="flex items-center justify-between">
+              <span className="text-[12px] text-[#e8edf8]">{h.flag} {h.name}</span>
+              <span className="text-[11px] text-[#657084]">{h.date}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ── While Asleep screen ───────────────────────────────────────────────────────
+// Mirrors Figma node 410:8566 ("While you were asleep"). An AI-generated
+// overnight briefing shown while the current view's absence window is active.
+
+const BRIEFING_STATS = [
+  { value: "5",  label: "Decisions", sub: "2 need your input" },
+  { value: "1",  label: "Blockers",  sub: "Active now"        },
+  { value: "12", label: "Threads",   sub: "4 unread"          },
+  { value: "3",  label: "Mentions",  sub: "Awaiting reply"    },
+];
+const TAG_COLORS: Record<string, string> = {
+  Blocker: "#fd6e8d", Decision: "#4d9fff", Feedback: "#8b7fe8", Mention: "#fff4a1", Update: "#657084",
+};
+const ASLEEP_FEED = [
+  { id: "01", initials: "RM", tag: "Blocker",  region: "CA", time: "01:05 EST", author: "R. Müller",
+    text: "CI/CD pipeline failure on staging is blocking PR #204 merge — infra team (CA) investigating since 01:05 EST. No ETA yet." },
+  { id: "02", initials: "TL", tag: "Decision", region: null, time: "02:14 EST", author: "T. Lee",
+    text: "Sprint scope locked to 4 features after async vote. API v3 endpoints deferred to Q3 sprint — auth dependency risk noted." },
+  { id: "03", initials: "DK", tag: "Feedback", region: "JP", time: "09:20 JST", author: "D. Kim",
+    text: "Design review comments posted on Prototype B — 3 unresolved threads on nav pattern, 1 on contrast ratio. Needs review before dev handoff." },
+  { id: "04", initials: "YS", tag: "Mention",  region: null, time: "10:44 JST", author: "Y. Sato",
+    text: "You were tagged in a discussion on timezone-aware notification defaults — 2 replies await your input on opt-in vs. opt-out policy." },
+  { id: "05", initials: "•",  tag: "Update",   region: null, time: "23:50 EST", author: "System",
+    text: "Retrospective cadence changed from biweekly to weekly starting next sprint. Calendar invites updated for all team members." },
+];
+const DECISION_HISTORY = [
+  { title: "Sprint scope finalized — 4 features confirmed for current sprint", status: "Final",    author: "T. Lee",    time: "02:10 EST · 16:14 KST prev." },
+  { title: "Retrospective frequency changed from biweekly → weekly",           status: "Pending",  author: "R. Müller", time: "21:30 EST · 11:30 KST prev." },
+  { title: "Cross-timezone notification defaults: opt-in model proposed",      status: "Reverted", author: "Y. Sato",   time: "09:44 KST prev.", tag: "#341" },
+];
+const DECISION_STATUS_COLOR: Record<string, string> = { Final: "#00d4b4", Pending: "#fff4a1", Reverted: "#fd6e8d" };
+
+function WhileAsleepView() {
+  return (
+    <div
+      className="absolute flex flex-col overflow-hidden rounded-[20px] border border-[#2b2c2d]"
+      style={{ top: 128, left: 240, right: 312, bottom: 16, background: "#0a0f15", zIndex: 15 }}
+    >
+      <div className="flex items-start justify-between p-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+        <div>
+          <div className="flex items-center gap-2">
+            <Moon size={18} color="#fff4a1" />
+            <span className="text-[18px] font-semibold text-[#e8edf8]">While you were asleep</span>
+            <span className="text-[13px] text-[#657084]">— 7 things happened</span>
+          </div>
+          <p className="text-[12px] text-[#657084] mt-1">
+            Absence window: 21:00 KST → 08:30 KST · Your time now: 08:32 KST
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold text-[#bfc7d4]" style={{ borderColor: "#303644" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80]" /> 3 teammates online now
+          </span>
+          <button className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold text-[#bfc7d4]" style={{ borderColor: "#303644" }}>
+            <RefreshCw size={12} /> Refresh briefing
+          </button>
+        </div>
+      </div>
+
+      <div className="p-4">
+        <div className="rounded-xl border p-3" style={{ borderColor: "#303644", background: "rgba(255,255,255,0.02)" }}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Sparkles size={13} color="#fff4a1" />
+            <span className="text-[12px] font-semibold text-[#bfc7d4]">AI Briefing</span>
+          </div>
+          <p className="text-[13px] leading-relaxed text-[#cecece] mb-3">
+            Due to the decision to shorten the{" "}
+            <span style={{ color: "#4d9fff" }}>Q3 sprint schedule</span>, the{" "}
+            <span style={{ color: "#4d9fff" }}>authentication module</span> has been moved forward by two weeks.
+            Your resource approval is the blocking factor. Leo's{" "}
+            <span style={{ color: "#fd6e8d" }}>API CORS issue</span> is still unresolved and requires immediate action.
+            Overall progress is <span style={{ color: "#00d4b4" }}>+12%</span> compared to last week.
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {BRIEFING_STATS.map((s) => (
+              <div key={s.label} className="rounded-lg px-3 py-2" style={{ background: "rgba(255,255,255,0.04)" }}>
+                <p className="text-[20px] font-semibold text-[#e8edf8]">{s.value}</p>
+                <p className="text-[11px] text-[#bfc7d4]">{s.label}</p>
+                <p className="text-[10px] text-[#5a7099]">{s.sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 flex flex-col gap-3">
+        {ASLEEP_FEED.map((f) => (
+          <div key={f.id} className="flex gap-3 rounded-xl p-3" style={{ background: "rgba(255,255,255,0.02)" }}>
+            <span className="text-[11px] text-[#4e5669] shrink-0 w-4">{f.id}</span>
+            <Avatar initials={f.initials} color={TAG_COLORS[f.tag]} size={24} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="rounded-full px-1.5 text-[10px] font-semibold" style={{ background: `${TAG_COLORS[f.tag]}22`, color: TAG_COLORS[f.tag] }}>{f.tag}</span>
+                {f.region && <span className="rounded-full px-1.5 text-[10px] font-semibold text-[#8b95ab]" style={{ background: "#252932" }}>{f.region}</span>}
+                <span className="text-[11px] text-[#5a7099]">{f.time} · {f.author}</span>
+              </div>
+              <p className="text-[13px] text-[#cecece] leading-snug">{f.text}</p>
+            </div>
+          </div>
+        ))}
+        <button className="mb-2 rounded-xl py-2 text-center text-[12px] font-semibold text-[#8b95ab]" style={{ background: "rgba(255,255,255,0.02)" }}>
+          + 2 more items in full briefing
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between border-t px-4 py-3" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+        <span className="text-[11px] text-[#5a7099]">Last refreshed 08:30 KST · Auto-refresh every 15 min</span>
+        <button className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold text-[#0a0f15]" style={{ background: "#fff4a1" }}>
+          View full briefing <ArrowRight size={12} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WhileAsleepRightPanel() {
+  return (
+    <aside
+      className="absolute flex flex-col rounded-[20px] border border-[#2b2c2d] overflow-hidden overflow-y-auto"
+      style={{ top: 128, right: 16, bottom: 16, width: 280, background: "rgba(26,27,29,0.92)", backdropFilter: "blur(16px)", zIndex: 20, pointerEvents: "auto" }}
+    >
+      <div className="border-b border-[rgba(77,159,255,0.12)] px-4 py-4">
+        <span className="text-white text-[16px] font-semibold">Decision History Timeline</span>
+        <p className="text-[11px] text-[#657084] mt-1">Newest first · Absence window: 21:00 → 08:30 KST · 5 decisions</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5 px-4 py-3 border-b" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+        <span className="text-[11px] text-[#5a7099]">Filter:</span>
+        {["Region", "Project", "Decision status"].map((f) => (
+          <span key={f} className="rounded-full border px-2 py-1 text-[10px] font-semibold text-[#bfc7d4]" style={{ borderColor: "#303644" }}>{f}</span>
+        ))}
+        <span className="text-[10px] font-semibold text-[#4d9fff] ml-auto">Clear</span>
+      </div>
+      <div className="flex flex-col gap-2 p-4">
+        {DECISION_HISTORY.map((d, i) => (
+          <div key={i} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)" }}>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="rounded-full px-1.5 text-[10px] font-semibold" style={{ background: `${DECISION_STATUS_COLOR[d.status]}22`, color: DECISION_STATUS_COLOR[d.status] }}>
+                {d.status}
+              </span>
+              {d.tag && <span className="text-[10px] text-[#5a7099]">{d.tag}</span>}
+            </div>
+            <p className="text-[13px] font-semibold text-white mb-1.5">{d.title}</p>
+            <p className="text-[11px] text-[#8b95ab]">{d.author} · {d.time}</p>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+// ── Community screen ──────────────────────────────────────────────────────────
+// Mirrors Figma node 472:10851 ("커뮤니티") + 575:50702 (Cowork Room detail popup).
+
+type CoworkRoom = {
+  id: string; name: string; time: string; meta: string;
+  avatars: { i: string; c: string }[]; extra: number;
+  goal: string; modalGoal: string; cta: string;
+};
+const COWORK_ROOMS: CoworkRoom[] = [
+  {
+    id: "lofi", name: "Lo-fi Beats to Focus", time: "09:00–09:15", meta: "⏱ 52 min · chilling",
+    avatars: [{ i: "PK", c: "#00d4b4" }, { i: "RT", c: "#4d9fff" }, { i: "아린", c: "#fad4ea" }], extra: 2,
+    goal: "스프린트 보드 정리",
+    modalGoal: "Low-key lo-fi playlist running in the background — drop in, put your headphones on, and get a quiet co-working hour in before the day picks up.",
+    cta: "Join Lo-fi Room",
+  },
+  {
+    id: "rnb", name: "Focus with Rnb", time: "10:00–11:00", meta: "🎧 focusing",
+    avatars: [{ i: "PR", c: "#8b7fe8" }], extra: 0,
+    goal: "PR #42 리뷰",
+    modalGoal: "Deep-focus block for reviewing PR #42 — join if you're heads-down on the same review queue.",
+    cta: "Join Review",
+  },
+  {
+    id: "midnight", name: "Burn the midnight oil", time: "23:00–23:31", meta: "☕ 31 min · focusing",
+    avatars: [{ i: "PN", c: "#fd6e8d" }], extra: 0,
+    goal: "토큰 엣지케이스",
+    modalGoal: "Late-night working session tackling token edge cases before tomorrow's release.",
+    cta: "Join Session",
+  },
+  {
+    id: "mkt", name: "MKT Hot Discussion", time: "13:00–14:00", meta: "💬 discussing",
+    avatars: [{ i: "YS", c: "#fff4a1" }], extra: 0,
+    goal: "캠페인 카피 브레인스토밍",
+    modalGoal: "Open discussion room for marketing's hottest topic of the day.",
+    cta: "Join Discussion",
+  },
+];
+// Scattered layout mirrors Figma's "constellation" canvas (node 472:11131) —
+// each day is a star positioned at its own (cx, cy) rather than a horizontal
+// strip. Coordinates are % of the 1011×488 canvas, taken from the Figma frame.
+type ConstellationDay = {
+  day: string; label: string; meta: string; cx: number; cy: number; size: number;
+  status: "completed" | "open" | "joined" | "none";
+  dayColor: string; labelColor: string; metaColor: string;
+};
+const CONSTELLATION_DAYS: ConstellationDay[] = [
+  { day: "MON 23", label: "Kickoff",       meta: "5 joined",   cx: 16.7, cy: 58.5, size: 46, status: "completed", dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
+  { day: "TUE 24", label: "Design sync",   meta: "4 joined",   cx: 32.6, cy: 44.6, size: 46, status: "completed", dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
+  { day: "WED 25", label: "Demo day",      meta: "6 joined",   cx: 48.4, cy: 58.5, size: 46, status: "completed", dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
+  { day: "TODAY · THU 26", label: "Standup Sync", meta: "＋ Join · 3", cx: 63.1, cy: 44.3, size: 56, status: "joined", dayColor: "#f5c758", labelColor: "#fce9c0", metaColor: "#231806" },
+  { day: "FRI 27", label: "Design crit",   meta: "Join",       cx: 75.0, cy: 55.1, size: 22, status: "open", dayColor: "#8b95a1", labelColor: "#7c8699", metaColor: "#aeb6c2" },
+  { day: "SAT 28", label: "🎮 Game Night", meta: "＋ RSVP",     cx: 85.2, cy: 40.3, size: 42, status: "open", dayColor: "#9cc4ff", labelColor: "#9cc4ff", metaColor: "#9cc4ff" },
+  { day: "SUN 29", label: "Rest day",      meta: "",           cx: 94.1, cy: 54.5, size: 18, status: "none", dayColor: "#6b7684", labelColor: "#5b6678", metaColor: "#5b6678" },
+];
+// Deterministic star-dust background, seeded so it doesn't reshuffle on rerender.
+const CONSTELLATION_DUST = (() => {
+  const rand = mulberry32(hashStr("constellation-recap"));
+  return Array.from({ length: 46 }, () => ({
+    x: rand() * 100, y: rand() * 100,
+    r: 0.6 + rand() * 1.2, o: 0.15 + rand() * 0.4,
+  }));
+})();
+
+function ConstellationCanvas() {
+  const ordered = CONSTELLATION_DAYS;
+  const linePath = ordered.map((d, i) => `${i === 0 ? "M" : "L"} ${d.cx} ${d.cy}`).join(" ");
+  return (
+    <div className="relative w-full" style={{ height: 260 }}>
+      {CONSTELLATION_DUST.map((s, i) => (
+        <span
+          key={i}
+          className="absolute rounded-full bg-white"
+          style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.r * 2, height: s.r * 2, opacity: s.o }}
+        />
+      ))}
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d={linePath} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={0.15} vectorEffect="non-scaling-stroke" />
+      </svg>
+      {ordered.map((d) => (
+        <div
+          key={d.day}
+          className="absolute flex flex-col items-center gap-1"
+          style={{ left: `${d.cx}%`, top: `${d.cy}%`, transform: "translate(-50%, -50%)" }}
+        >
+          <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: d.dayColor }}>{d.day}</span>
+          <div
+            className="relative rounded-full flex items-center justify-center shrink-0"
+            style={{
+              width: d.size, height: d.size,
+              background: d.status === "joined"
+                ? "radial-gradient(circle, rgba(245,199,88,0.55) 0%, rgba(245,199,88,0.12) 70%)"
+                : "radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 70%)",
+              border: `1px solid ${d.status === "joined" ? "rgba(245,199,88,0.6)" : "rgba(255,255,255,0.12)"}`,
+              boxShadow: d.status === "joined" ? "0 0 16px rgba(245,199,88,0.35)" : "none",
+            }}
+          >
+            {d.status === "completed" && <CheckCircle2 size={Math.round(d.size * 0.32)} color="#15c47e" />}
+            {d.status === "open" && <Circle size={Math.round(d.size * 0.24)} color={d.dayColor} strokeWidth={1.5} />}
+          </div>
+          <span className="text-[10px] whitespace-nowrap" style={{ color: d.labelColor }}>{d.label}</span>
+          {d.meta && (
+            d.status === "joined" ? (
+              <span className="rounded-full px-2.5 py-0.5 text-[10px] font-medium whitespace-nowrap" style={{ background: "#fff4a1", color: d.metaColor }}>{d.meta}</span>
+            ) : d.status === "open" ? (
+              <span className="rounded-full border px-2.5 py-0.5 text-[10px] font-medium whitespace-nowrap" style={{ borderColor: "#5b6678", color: d.metaColor }}>{d.meta}</span>
+            ) : (
+              <span className="text-[10px] whitespace-nowrap" style={{ color: d.metaColor }}>{d.meta}</span>
+            )
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+const SMALLTALK = [
+  { initials: "MA", name: "Mara", city: "Lisbon",    time: "09:12", text: "Found the BEST pastéis de nata near the office", likes: 12, comments: 4 },
+  { initials: "DV", name: "Dev",  city: "Bangalore", time: "14:40", text: "Monsoon finally here, working to the sound of rain 🌧️ peak focus mode unlocked", likes: 9, comments: 2 },
+];
+const SPOTLIGHT_TAGS = ["UX", "협업", "피그마", "디자인시스템"];
+const SPOTLIGHT_TASKS = [
+  { title: "로그인 모듈 UI 리뷰",        status: "검토중" },
+  { title: "디자인 시스템 컴포넌트 정리", status: "진행중" },
+  { title: "스프린트 3 회고 준비",       status: "예정"   },
+];
+
+function CoworkRoomModal({ room, onClose }: { room: CoworkRoom; onClose: () => void }) {
+  return (
+    <div
+      className="absolute inset-0 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.55)", zIndex: 40 }}
+      onPointerDown={onClose}
+    >
+      <div
+        className="flex flex-col gap-4 rounded-2xl border p-5"
+        style={{ width: 340, borderColor: "#303644", background: "linear-gradient(180deg, #222631 0%, #151920 100%)" }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[15px] font-semibold text-[#e8edf8]">🎧 {room.name}</p>
+            <p className="text-[11px] text-[#657084] mt-0.5">{room.time}</p>
+          </div>
+          <button onClick={onClose} className="text-[#657084]"><X size={16} /></button>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.5px] text-[#657084] mb-2">WHO'S IN</p>
+          <div className="flex items-center justify-between">
+            <div className="flex isolate">
+              {room.avatars.map((a, i) => (
+                <div key={i} className="mr-[-6px]" style={{ zIndex: room.avatars.length - i }}>
+                  <div className="rounded-xl border-2 border-[#151920]" style={{ background: a.c }}>
+                    <div className="flex items-center justify-center rounded-[10px]" style={{ width: 28, height: 28 }}>
+                      <span className="text-[10px] font-semibold" style={{ color: "#0a0f15" }}>{a.i}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <span className="text-[11px] text-[#657084]">{room.avatars.length + room.extra} people</span>
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.5px] text-[#657084] mb-1">TODAY'S GOAL</p>
+          <p className="text-[13px] leading-relaxed text-[#cecece]">{room.modalGoal}</p>
+        </div>
+        <button className="w-full rounded-full py-2.5 text-[14px] font-semibold text-[#0a0f15]" style={{ background: "#fff4a1" }}>
+          {room.cta}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CommunityView() {
+  const [openRoom, setOpenRoom] = useState<CoworkRoom | null>(null);
+  return (
+    <div
+      className="absolute overflow-hidden rounded-[20px] border border-[#2b2c2d]"
+      style={{ top: 128, left: 240, right: 312, bottom: 16, background: "#0a0f15", zIndex: 15 }}
+    >
+      <div className="flex h-full flex-col overflow-y-auto p-4 gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[20px] font-semibold text-[#e8edf8]">Community</span>
+            <span className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-[#4ade80]" style={{ background: "rgba(74,222,128,0.12)" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80]" /> 42 online
+            </span>
+          </div>
+          <div className="flex items-center gap-2 rounded-full border px-3 py-2" style={{ borderColor: "#303644", width: 260 }}>
+            <Search size={14} color="#5a7099" />
+            <span className="text-[12px] text-[#5a7099]">Search people, rooms…</span>
+          </div>
+        </div>
+
+        <div
+          className="rounded-[24px] border p-5"
+          style={{ borderColor: "rgba(255,255,255,0.07)", background: "linear-gradient(180deg, rgba(18,21,32,0.92) 0%, rgba(11,13,21,0.92) 100%)", boxShadow: "0px 18px 50px 0px rgba(0,0,0,0.45)" }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[18px] font-extrabold text-[#f4f6fb]">Constellation Recap</p>
+              <p className="text-[12.5px] text-[#7c8699] mt-0.5">Every connection you made today becomes a star in your constellation</p>
+            </div>
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <div className="flex rounded-xl border p-1" style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.04)" }}>
+                {["Week", "Month"].map((t) => (
+                  <span key={t} className="rounded-[10px] px-4 py-1.5 text-[13px] font-semibold" style={{ background: t === "Week" ? "#3c3c3c" : "transparent", color: t === "Week" ? "#ffffff" : "#9aa3b5" }}>{t}</span>
+                ))}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <ChevronLeft size={14} color="#7c8699" />
+                <span className="text-[12px] font-semibold text-[#aeb6c2]">Jun 23 – Jun 29 · W26</span>
+                <ChevronRight size={14} color="#7c8699" />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 pt-2 mt-2">
+            <div className="flex items-center gap-1.5">
+              <span className="rounded-full" style={{ width: 9, height: 9, background: "#f5c758", boxShadow: "0 0 8px rgba(245,199,88,0.8)" }} />
+              <span className="text-[11.5px] font-semibold text-[#c9d2e3]">Joined</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="rounded-full border" style={{ width: 9, height: 9, borderColor: "#4a5364" }} />
+              <span className="text-[11.5px] font-semibold text-[#8b95a1]">Open · tap to join</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="flex items-center justify-center rounded-full" style={{ width: 14, height: 14, background: "#15c47e" }}>
+                <CheckCircle2 size={9} color="#0a0f15" />
+              </span>
+              <span className="text-[11.5px] font-semibold text-[#8b95a1]">Completed</span>
+            </div>
+          </div>
+          <ConstellationCanvas />
+        </div>
+
+        <div className="rounded-xl border p-4" style={{ borderColor: "#303644" }}>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-[15px] font-semibold text-[#e8edf8]">🎧 Cowork Room</p>
+              <p className="text-[11px] text-[#657084]">지금 63명 집중 중 · 오늘 총 215명 참여</p>
+            </div>
+            <button className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold text-[#0a0f15]" style={{ background: "#fff4a1" }}>
+              <Plus size={12} /> 방 추가하기
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {COWORK_ROOMS.map((room) => (
+              <button
+                key={room.id}
+                onClick={() => setOpenRoom(room)}
+                className="flex flex-col gap-2 rounded-xl p-3 text-left"
+                style={{ background: "rgba(255,255,255,0.03)" }}
+              >
+                <p className="text-[13px] font-semibold text-[#e8edf8]">{room.name}</p>
+                <p className="text-[11px] text-[#657084]">{room.meta}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex isolate">
+                    {room.avatars.map((a, i) => (
+                      <div key={i} className="mr-[-6px]" style={{ zIndex: room.avatars.length - i }}>
+                        <div className="flex items-center justify-center rounded-xl border-2 border-[#0a0f15]" style={{ width: 24, height: 24, background: a.c }}>
+                          <span className="text-[9px] font-semibold" style={{ color: "#0a0f15" }}>{a.i}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {room.extra > 0 && (
+                      <div className="flex items-center justify-center rounded-xl border-2 border-[#0a0f15]" style={{ width: 24, height: 24, background: "#657084" }}>
+                        <span className="text-[9px] font-semibold text-white">+{room.extra}</span>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-[#5a7099]">오늘 목표 · {room.goal}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {openRoom && <CoworkRoomModal room={openRoom} onClose={() => setOpenRoom(null)} />}
+    </div>
+  );
+}
+
+function CommunityRightPanel() {
+  return (
+    <aside
+      className="absolute flex flex-col rounded-[20px] border border-[#2b2c2d] overflow-hidden overflow-y-auto"
+      style={{ top: 128, right: 16, bottom: 16, width: 280, background: "rgba(26,27,29,0.92)", backdropFilter: "blur(16px)", zIndex: 20, pointerEvents: "auto" }}
+    >
+      <div className="border-b border-[rgba(77,159,255,0.12)] px-4 py-4">
+        <span className="text-white text-[16px] font-semibold">Who will take care of this week</span>
+      </div>
+      <div className="p-4 flex flex-col gap-3 border-b" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-3">
+          <Avatar initials="FA" color="#fd6e8d" size={36} online={true} />
+          <div className="min-w-0">
+            <p className="text-[14px] font-semibold text-[#e8edf8]">Fatima Al-Zahra</p>
+            <p className="text-[11px] text-[#657084]">Product Designer</p>
+            <p className="text-[11px] text-[#657084]">🇦🇪 Dubai · GST 11:44</p>
+          </div>
+        </div>
+        <p className="text-[12px] leading-relaxed text-[#bfc7d4]">
+          디테일에 집착하는 디자이너. 사막 일출 보며 아이디어 정리하는 게 낙이에요 🌅 피그마 플러그인 덕후이기도 해요.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {SPOTLIGHT_TAGS.map((t) => (
+            <span key={t} className="rounded-full px-2 py-1 text-[10px] font-semibold text-[#bfc7d4]" style={{ background: "#252932" }}>{t}</span>
+          ))}
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold text-[#657084] mb-1.5">현재 진행 업무</p>
+          <div className="flex flex-col gap-1.5">
+            {SPOTLIGHT_TASKS.map((t) => (
+              <div key={t.title} className="flex items-center justify-between">
+                <span className="text-[12px] text-[#e8edf8]">{t.title}</span>
+                <span className="text-[10px] text-[#5a7099]">{t.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 flex flex-col gap-3">
+        <p className="text-[13px] font-semibold text-[#bfc7d4]">This Week's Smalltalk</p>
+        {SMALLTALK.map((s) => (
+          <div key={s.initials} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)" }}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Avatar initials={s.initials} size={22} />
+              <span className="text-[12px] font-semibold text-[#e8edf8]">{s.name}</span>
+              <span className="text-[11px] text-[#5a7099]">{s.city} · {s.time}</span>
+            </div>
+            <p className="text-[12px] leading-relaxed text-[#cecece] mb-1.5">{s.text}</p>
+            <span className="text-[11px] text-[#657084]">❤️ {s.likes} · 💬 {s.comments}</span>
+          </div>
+        ))}
+        <button className="rounded-full border py-2 text-[12px] font-semibold text-[#bfc7d4]" style={{ borderColor: "#303644" }}>
+          다음 스몰톡 주자 투표하기
+        </button>
+      </div>
+    </aside>
+  );
+}
+
 // ── Root App — shared chrome + view switcher ─────────────────────────────────
+
+const MAIN_BY_VIEW: Record<View, () => JSX.Element> = {
+  dashboard: GlobeView, chat: WorkChat,
+  calendar: CalendarView, "while-asleep": WhileAsleepView, community: CommunityView,
+};
+const RIGHT_BY_VIEW: Record<View, () => JSX.Element> = {
+  dashboard: RightSidebar, chat: ActionsPanel,
+  calendar: CalendarRightPanel, "while-asleep": WhileAsleepRightPanel, community: CommunityRightPanel,
+};
 
 export default function App() {
   const [view, setView] = useState<View>("dashboard");
+  const Main = MAIN_BY_VIEW[view];
+  const Right = RIGHT_BY_VIEW[view];
   return (
     <div
       className="relative w-full h-full overflow-hidden select-none"
       style={{ background: "linear-gradient(to bottom, #06101E 0%, #060713 60%, #04060F 100%)", fontFamily: "Inter, sans-serif" }}
     >
-      {view === "dashboard" ? <GlobeView /> : <WorkChat />}
+      <Main />
       <Header />
       <LeftSidebar view={view} onNavigate={setView} />
-      {view === "dashboard" ? <RightSidebar /> : <ActionsPanel />}
+      <Right />
     </div>
   );
 }
