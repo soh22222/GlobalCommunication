@@ -7,6 +7,16 @@ import {
   Image as ImageIcon, CheckCircle2, Circle, Languages, Sparkles,
   ChevronLeft, ChevronRight, Plus, X, RefreshCw, ArrowRight,
 } from "lucide-react";
+import glyphCircle from "./assets/constellation/glyph_circle.svg";
+import glyphCheck from "./assets/constellation/glyph_check.svg";
+import glyphToday from "./assets/constellation/glyph_today.svg";
+import pillToday from "./assets/constellation/pill_today.svg";
+import ringFri from "./assets/constellation/ring_fri.svg";
+import glyphSat from "./assets/constellation/glyph_sat.svg";
+import pillSat from "./assets/constellation/pill_sat.svg";
+import glyphSun from "./assets/constellation/glyph_sun.svg";
+import constellationLine1 from "./assets/constellation/line1.svg";
+import constellationLine2 from "./assets/constellation/line2.svg";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1684,16 +1694,18 @@ const COWORK_ROOMS: CoworkRoom[] = [
 type ConstellationDay = {
   day: string; label: string; meta: string; cx: number; cy: number; size: number;
   status: "completed" | "open" | "joined" | "none";
-  dayColor: string; labelColor: string; metaColor: string;
+  glyph: string | null; dayColor: string; labelColor: string; metaColor: string;
 };
+// cx/cy = exact % position of the Figma glyph node's center within the
+// 1011×488 canvas (node 472:11131). glyph = exact Figma-exported asset.
 const CONSTELLATION_DAYS: ConstellationDay[] = [
-  { day: "MON 23", label: "Kickoff",       meta: "5 joined",   cx: 16.7, cy: 58.5, size: 46, status: "completed", dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
-  { day: "TUE 24", label: "Design sync",   meta: "4 joined",   cx: 32.6, cy: 44.6, size: 46, status: "completed", dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
-  { day: "WED 25", label: "Demo day",      meta: "6 joined",   cx: 48.4, cy: 58.5, size: 46, status: "completed", dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
-  { day: "TODAY · THU 26", label: "Standup Sync", meta: "＋ Join · 3", cx: 63.1, cy: 44.3, size: 56, status: "joined", dayColor: "#f5c758", labelColor: "#fce9c0", metaColor: "#231806" },
-  { day: "FRI 27", label: "Design crit",   meta: "Join",       cx: 75.0, cy: 55.1, size: 22, status: "open", dayColor: "#8b95a1", labelColor: "#7c8699", metaColor: "#aeb6c2" },
-  { day: "SAT 28", label: "🎮 Game Night", meta: "＋ RSVP",     cx: 85.2, cy: 40.3, size: 42, status: "open", dayColor: "#9cc4ff", labelColor: "#9cc4ff", metaColor: "#9cc4ff" },
-  { day: "SUN 29", label: "Rest day",      meta: "",           cx: 94.1, cy: 54.5, size: 18, status: "none", dayColor: "#6b7684", labelColor: "#5b6678", metaColor: "#5b6678" },
+  { day: "MON 23", label: "Kickoff",       meta: "5 joined",   cx: 16.68, cy: 55.66, size: 55, status: "completed", glyph: glyphCircle, dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
+  { day: "TUE 24", label: "Design sync",   meta: "4 joined",   cx: 32.59, cy: 41.72, size: 55, status: "completed", glyph: glyphCircle, dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
+  { day: "WED 25", label: "Demo day",      meta: "6 joined",   cx: 48.43, cy: 55.66, size: 55, status: "completed", glyph: glyphCircle, dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
+  { day: "TODAY · THU 26", label: "Standup Sync", meta: "＋ Join · 3", cx: 63.11, cy: 40.68, size: 67, status: "joined", glyph: glyphToday, dayColor: "#f5c758", labelColor: "#fce9c0", metaColor: "#231806" },
+  { day: "FRI 27", label: "Design crit",   meta: "Join",       cx: 75.02, cy: 51.40, size: 24, status: "open", glyph: ringFri, dayColor: "#8b95a1", labelColor: "#7c8699", metaColor: "#aeb6c2" },
+  { day: "SAT 28", label: "🎮 Game Night", meta: "＋ RSVP",     cx: 85.16, cy: 36.81, size: 51, status: "open", glyph: glyphSat, dayColor: "#9cc4ff", labelColor: "#9cc4ff", metaColor: "#9cc4ff" },
+  { day: "SUN 29", label: "Rest day",      meta: "",           cx: 94.06, cy: 54.48, size: 18, status: "none", glyph: glyphSun, dayColor: "#6b7684", labelColor: "#5b6678", metaColor: "#5b6678" },
 ];
 // Deterministic star-dust background, seeded so it doesn't reshuffle on rerender.
 const CONSTELLATION_DUST = (() => {
@@ -1705,10 +1717,8 @@ const CONSTELLATION_DUST = (() => {
 })();
 
 function ConstellationCanvas() {
-  const ordered = CONSTELLATION_DAYS;
-  const linePath = ordered.map((d, i) => `${i === 0 ? "M" : "L"} ${d.cx} ${d.cy}`).join(" ");
   return (
-    <div className="relative w-full" style={{ height: 260 }}>
+    <div className="relative w-full" style={{ aspectRatio: "1011 / 488" }}>
       {CONSTELLATION_DUST.map((s, i) => (
         <span
           key={i}
@@ -1716,34 +1726,43 @@ function ConstellationCanvas() {
           style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.r * 2, height: s.r * 2, opacity: s.o }}
         />
       ))}
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <path d={linePath} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={0.15} vectorEffect="non-scaling-stroke" />
-      </svg>
-      {ordered.map((d) => (
+      {/* Exact Figma connecting-line shapes (Vector 472:11186 / 472:11187) */}
+      <img src={constellationLine1} alt="" className="absolute" style={{ left: "16.65%", top: "38.98%", width: "46.48%", height: "17.75%" }} />
+      <img src={constellationLine2} alt="" className="absolute" style={{ left: "63.13%", top: "38.98%", width: "29.83%", height: "23.34%" }} />
+      {/* Soft gold halo behind today's star (Figma's exported glow asset only carries a
+          placeholder color, so this is reproduced as a CSS radial glow instead). */}
+      <span
+        className="absolute rounded-full"
+        style={{
+          left: "63.11%", top: "40.68%", width: 130, height: 130, transform: "translate(-50%, -50%)",
+          background: "radial-gradient(circle, rgba(245,199,88,0.35) 0%, rgba(245,199,88,0) 70%)",
+        }}
+      />
+      {CONSTELLATION_DAYS.map((d) => (
         <div
           key={d.day}
           className="absolute flex flex-col items-center gap-1"
           style={{ left: `${d.cx}%`, top: `${d.cy}%`, transform: "translate(-50%, -50%)" }}
         >
           <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: d.dayColor }}>{d.day}</span>
-          <div
-            className="relative rounded-full flex items-center justify-center shrink-0"
-            style={{
-              width: d.size, height: d.size,
-              background: d.status === "joined"
-                ? "radial-gradient(circle, rgba(245,199,88,0.55) 0%, rgba(245,199,88,0.12) 70%)"
-                : "radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 70%)",
-              border: `1px solid ${d.status === "joined" ? "rgba(245,199,88,0.6)" : "rgba(255,255,255,0.12)"}`,
-              boxShadow: d.status === "joined" ? "0 0 16px rgba(245,199,88,0.35)" : "none",
-            }}
-          >
-            {d.status === "completed" && <CheckCircle2 size={Math.round(d.size * 0.32)} color="#15c47e" />}
-            {d.status === "open" && <Circle size={Math.round(d.size * 0.24)} color={d.dayColor} strokeWidth={1.5} />}
+          <div className="relative flex items-center justify-center shrink-0" style={{ width: d.size, height: d.size }}>
+            {d.glyph && <img src={d.glyph} alt="" className="absolute inset-0 w-full h-full" />}
+            {d.status === "completed" && (
+              <img src={glyphCheck} alt="" className="absolute" style={{ width: d.size * 0.27, height: d.size * 0.27, left: "61%", top: "16%" }} />
+            )}
           </div>
           <span className="text-[10px] whitespace-nowrap" style={{ color: d.labelColor }}>{d.label}</span>
           {d.meta && (
             d.status === "joined" ? (
-              <span className="rounded-full px-2.5 py-0.5 text-[10px] font-medium whitespace-nowrap" style={{ background: "#fff4a1", color: d.metaColor }}>{d.meta}</span>
+              <div className="relative flex items-center justify-center" style={{ width: 67, height: 22 }}>
+                <img src={pillToday} alt="" className="absolute inset-0 w-full h-full" />
+                <span className="relative text-[10px] font-medium whitespace-nowrap" style={{ color: d.metaColor }}>{d.meta}</span>
+              </div>
+            ) : d.status === "open" && d.day === "SAT 28" ? (
+              <div className="relative flex items-center justify-center" style={{ width: 59, height: 20 }}>
+                <img src={pillSat} alt="" className="absolute inset-0 w-full h-full" />
+                <span className="relative text-[10px] font-medium whitespace-nowrap" style={{ color: d.metaColor }}>{d.meta}</span>
+              </div>
             ) : d.status === "open" ? (
               <span className="rounded-full border px-2.5 py-0.5 text-[10px] font-medium whitespace-nowrap" style={{ borderColor: "#5b6678", color: d.metaColor }}>{d.meta}</span>
             ) : (
