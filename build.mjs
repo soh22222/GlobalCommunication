@@ -1,0 +1,14 @@
+import * as esbuild from "esbuild";
+
+await esbuild.build({
+  entryPoints: ["src/main.tsx"],
+  bundle: true,
+  outfile: "dist/bundle.js",
+  format: "esm",
+  minify: true,
+  loader: { ".tsx": "tsx", ".ts": "ts", ".json": "json" },
+  jsx: "automatic",
+  define: { "process.env.NODE_ENV": '"production"' },
+});
+
+console.log("build ok");
