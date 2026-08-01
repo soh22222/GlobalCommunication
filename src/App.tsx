@@ -456,7 +456,7 @@ function Header() {
       <div className="flex items-center justify-center shrink-0" style={{ width: 208 }}>
         <span
           className="whitespace-nowrap"
-          style={{ fontFamily: "Futura, 'Trebuchet MS', sans-serif", fontWeight: 500, fontSize: 42, color: "#fff4a1", letterSpacing: "-0.462px", lineHeight: 1.5 }}
+          style={{ fontFamily: "Futura, 'Trebuchet MS', sans-serif", fontWeight: 500, fontSize: 32, color: "#fff4a1", letterSpacing: "-0.462px", lineHeight: 1.5 }}
         >
           Orbit
         </span>
@@ -466,7 +466,7 @@ function Header() {
 
       <div className="flex items-center gap-3 shrink-0" style={{ width: 272 }}>
         <div
-          className="flex flex-1 items-center gap-2 px-4 rounded-full border"
+          className="flex flex-1 items-center justify-center gap-2 px-4 rounded-full border"
           style={{ height: 48, background: "#131820", borderColor: "#303644" }}
         >
           <span className="text-[16px] text-[#e0e5eb]" style={{ fontFamily: "SUIT, Inter, sans-serif", letterSpacing: "-0.32px" }}>17 June</span>
