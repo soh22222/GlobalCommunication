@@ -1531,8 +1531,17 @@ const HOLIDAYS = [
   { flag: "🇺🇸", name: "Juneteenth",   date: "Jun 19" },
 ];
 
+const DAY_VIEW_LABEL = new Date(2026, 5, 23).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
 function CalendarView() {
   const { scheduledMeeting } = useNav();
+  const [mode, setMode] = useState<"Month" | "Week" | "Day">("Month");
+  const currentWeek = JUNE_WEEKS.find((week) => week.some((c) => c.inMonth && c.day === 23))!;
+  const dayEvents = [
+    ...(CAL_EVENTS[23] ?? []),
+    ...(scheduledMeeting && scheduledMeeting.day === 23 ? [{ title: `Meet ${scheduledMeeting.invitee}`, color: "#4ade80" }] : []),
+  ];
+  const weeksToShow = mode === "Week" ? [currentWeek] : JUNE_WEEKS;
   return (
     <div
       className="absolute flex overflow-hidden rounded-[20px] border border-[#2b2c2d]"
@@ -1601,14 +1610,15 @@ function CalendarView() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex rounded-full border overflow-hidden" style={{ borderColor: "#303644" }}>
-              {["Month", "Week", "Day"].map((t) => (
-                <span
+              {(["Month", "Week", "Day"] as const).map((t) => (
+                <button
                   key={t}
+                  onClick={() => setMode(t)}
                   className="px-3 py-1.5 text-[12px] font-semibold"
-                  style={{ background: t === "Month" ? "#fff4a1" : "transparent", color: t === "Month" ? "#0a0f15" : "#bfc7d4" }}
+                  style={{ background: t === mode ? "#fff4a1" : "transparent", color: t === mode ? "#0a0f15" : "#bfc7d4" }}
                 >
                   {t}
-                </span>
+                </button>
               ))}
             </div>
             <span className="rounded-full border px-3 py-1.5 text-[12px] font-semibold text-[#bfc7d4]" style={{ borderColor: "#303644" }}>Today</span>
@@ -1619,28 +1629,46 @@ function CalendarView() {
           </div>
         </div>
 
-        <div className="grid grid-cols-7 text-[11px] font-semibold text-[#657084]">
-          {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => <span key={d} className="px-2 py-1">{d}</span>)}
-        </div>
-        <div className="flex-1 grid gap-px overflow-hidden rounded-lg" style={{ background: "rgba(255,255,255,0.06)", gridTemplateRows: `repeat(${JUNE_WEEKS.length}, 1fr)` }}>
-          {JUNE_WEEKS.map((week, wi) => (
-            <div key={wi} className="grid grid-cols-7 gap-px">
-              {week.map((c, ci) => (
-                <div key={ci} className="flex flex-col gap-1 p-1.5 overflow-hidden" style={{ background: "#0d1420", opacity: c.inMonth ? 1 : 0.4 }}>
-                  <span className="text-[11px]" style={{ color: c.inMonth ? "#bfc7d4" : "#4e5669" }}>{c.day}</span>
-                  {c.inMonth && [
-                    ...(CAL_EVENTS[c.day] ?? []),
-                    ...(scheduledMeeting && c.day === scheduledMeeting.day ? [{ title: `Meet ${scheduledMeeting.invitee}`, color: "#4ade80" }] : []),
-                  ].map((ev) => (
-                    <span key={ev.title} className="truncate rounded px-1 py-0.5 text-[10px] font-medium" style={{ background: ev.color + "33", color: ev.color }}>
-                      {ev.title}
-                    </span>
+        {mode === "Day" ? (
+          <div className="flex-1 flex flex-col gap-2 overflow-y-auto rounded-lg p-4" style={{ background: "#0d1420" }}>
+            <span className="text-[13px] font-semibold text-[#e5eaf4]">{DAY_VIEW_LABEL}</span>
+            {dayEvents.length === 0 ? (
+              <span className="text-[12px] text-[#4e5669]">No events today</span>
+            ) : (
+              dayEvents.map((ev) => (
+                <div key={ev.title} className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: ev.color + "1f" }}>
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: ev.color }} />
+                  <span className="text-[13px] font-medium" style={{ color: ev.color }}>{ev.title}</span>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-7 text-[11px] font-semibold text-[#657084]">
+              {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => <span key={d} className="px-2 py-1">{d}</span>)}
+            </div>
+            <div className="flex-1 grid gap-px overflow-hidden rounded-lg" style={{ background: "rgba(255,255,255,0.06)", gridTemplateRows: `repeat(${weeksToShow.length}, 1fr)` }}>
+              {weeksToShow.map((week, wi) => (
+                <div key={wi} className="grid grid-cols-7 gap-px">
+                  {week.map((c, ci) => (
+                    <div key={ci} className="flex flex-col gap-1 p-1.5 overflow-hidden" style={{ background: "#0d1420", opacity: c.inMonth ? 1 : 0.4 }}>
+                      <span className="text-[11px]" style={{ color: c.inMonth ? "#bfc7d4" : "#4e5669" }}>{c.day}</span>
+                      {c.inMonth && [
+                        ...(CAL_EVENTS[c.day] ?? []),
+                        ...(scheduledMeeting && c.day === scheduledMeeting.day ? [{ title: `Meet ${scheduledMeeting.invitee}`, color: "#4ade80" }] : []),
+                      ].map((ev) => (
+                        <span key={ev.title} className="truncate rounded px-1 py-0.5 text-[10px] font-medium" style={{ background: ev.color + "33", color: ev.color }}>
+                          {ev.title}
+                        </span>
+                      ))}
+                    </div>
                   ))}
                 </div>
               ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
