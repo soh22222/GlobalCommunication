@@ -446,9 +446,6 @@ function Header() {
       className="absolute top-0 left-0 right-0 flex items-end gap-3 p-4"
       style={{
         height: 112, // matches Figma (813:26275) — was 80, clipping the time-label row above the Golden Window bar
-        background: "rgba(4,7,14,0.60)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(43,44,45,0.5)",
         zIndex: 30,
         pointerEvents: "none",
       }}
