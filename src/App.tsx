@@ -320,9 +320,35 @@ const GOLDEN_RIGHT = [
   { initials: "WL", bg: "#fff4a1", color: "#222631" },
 ];
 
+// Live KST clock (minutes since midnight, fractional for smooth animation).
+function useKstMinutes() {
+  const [minutes, setMinutes] = useState(() => kstMinutesNow());
+  useEffect(() => {
+    const id = setInterval(() => setMinutes(kstMinutesNow()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return minutes;
+}
+function kstMinutesNow() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).formatToParts(new Date());
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+  return get("hour") * 60 + get("minute") + get("second") / 60;
+}
+
+const WORK_START_MIN = 9 * 60; // 09:00
+const WORK_END_MIN = 18 * 60; // 18:00
+
 function GoldenWindowBar() {
+  const [hovered, setHovered] = useState(false);
+  const nowMin = useKstMinutes();
+  // Bar starts full at 09:00 and shrinks from the right edge, hitting 0 width at 18:00.
+  const elapsed = Math.min(Math.max(nowMin - WORK_START_MIN, 0), WORK_END_MIN - WORK_START_MIN);
+  const rightInset = (elapsed / (WORK_END_MIN - WORK_START_MIN)) * 100;
+
   return (
-    <div className="flex-1 min-w-0">
+    <div className="flex-1 min-w-0" style={{ pointerEvents: "auto" }}>
       <div className="flex justify-between px-0 mb-1">
         {["09:00", "12:00", "15:00", "18:00"].map((t) => (
           <span key={t} className="text-[13px] text-[#797979]" style={{ fontFamily: "Inter, sans-serif" }}>{t}</span>
@@ -330,13 +356,15 @@ function GoldenWindowBar() {
       </div>
       <div className="relative h-12 rounded-full bg-[#131820] border border-[#303644]">
         <div
-          className="absolute top-0 h-full bg-white rounded-full flex items-center justify-between px-6"
-          style={{ left: "0%", right: "38%" }}
+          className="absolute top-0 h-full bg-white rounded-full flex items-center justify-between px-6 overflow-hidden cursor-pointer"
+          style={{ left: "0%", right: `${rightInset}%`, transition: "right 1s linear" }}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
         >
           <div className="flex items-center">
             {GOLDEN_LEFT.map((c, i) => <Chip key={i} {...c} />)}
             <div
-              className="flex items-center justify-center rounded-full text-white text-[10px] font-semibold border-2 border-white"
+              className="flex items-center justify-center rounded-full text-white text-[10px] font-semibold border-2 border-white shrink-0"
               style={{ width: 28, height: 28, background: "#00b296" }}
             >
               +5
@@ -349,6 +377,46 @@ function GoldenWindowBar() {
             {GOLDEN_RIGHT.map((c, i) => <Chip key={i} {...c} />)}
           </div>
         </div>
+        {hovered && <ActiveTeamMembersPopover />}
+      </div>
+    </div>
+  );
+}
+
+// Hover popover on the Golden Window bar — mirrors Figma "Active Team Members"
+// (node 575:44021): reuses the same roster shown in RightSidebar's Time Zone list.
+function ActiveTeamMembersPopover() {
+  return (
+    <div
+      className="absolute rounded-[20px] border border-[#2b2c2d] overflow-hidden flex flex-col"
+      style={{
+        top: "calc(100% + 8px)", left: 0, width: 313, maxHeight: 420,
+        background: "#1a1b1d", boxShadow: "0 16px 40px rgba(0,0,0,0.5)", zIndex: 40,
+      }}
+      onMouseEnter={(e) => e.stopPropagation()}
+    >
+      <div className="border-b border-[rgba(77,159,255,0.12)] px-4 py-4 shrink-0">
+        <span className="text-white text-[16px] font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>Active Team Members</span>
+      </div>
+      <div className="flex-1 overflow-y-auto flex flex-col">
+        {TZ_MEMBERS.map((m, i) => (
+          <div key={i} className="flex items-center justify-between px-4 py-3 border-b border-[rgba(77,159,255,0.06)]">
+            <div className="flex items-center gap-3 min-w-0">
+              <Avatar initials={m.initials} color={AVATAR_COLORS[i % AVATAR_COLORS.length]} online={true} />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1">
+                  <span className="text-[14px] font-semibold text-[#e8edf8]" style={{ fontFamily: "Inter, sans-serif" }}>{m.name}</span>
+                  <span className="text-[12px] text-[#55585f]" style={{ fontFamily: "Inter, sans-serif" }}>{m.dept}</span>
+                </div>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="text-[12px] text-[#55585f]" style={{ fontFamily: "Inter, sans-serif" }}>{m.city}</span>
+                  <span className="text-[10px] text-[#55585f] font-semibold px-1.5 rounded-full" style={{ background: "#252932", lineHeight: "16px" }}>{m.offset}</span>
+                </div>
+              </div>
+            </div>
+            <span className="text-[24px] font-bold text-[#e8edf8] shrink-0" style={{ fontFamily: "Inter, sans-serif" }}>{m.time}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
