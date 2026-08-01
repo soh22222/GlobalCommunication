@@ -6,7 +6,7 @@ await esbuild.build({
   outfile: "dist/bundle.js",
   format: "esm",
   minify: true,
-  loader: { ".tsx": "tsx", ".ts": "ts", ".json": "json", ".svg": "dataurl" },
+  loader: { ".tsx": "tsx", ".ts": "ts", ".json": "json", ".svg": "dataurl", ".jpg": "dataurl", ".png": "dataurl" },
   jsx: "automatic",
   define: { "process.env.NODE_ENV": '"production"' },
 });

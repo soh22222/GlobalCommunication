@@ -7,16 +7,29 @@ import {
   Image as ImageIcon, CheckCircle2, Circle, Languages, Sparkles,
   ChevronLeft, ChevronRight, Plus, X, RefreshCw, ArrowRight,
 } from "lucide-react";
-import glyphCircle from "./assets/constellation/glyph_circle.svg";
-import glyphCheck from "./assets/constellation/glyph_check.svg";
 import glyphToday from "./assets/constellation/glyph_today.svg";
-import pillToday from "./assets/constellation/pill_today.svg";
-import ringFri from "./assets/constellation/ring_fri.svg";
-import glyphSat from "./assets/constellation/glyph_sat.svg";
-import pillSat from "./assets/constellation/pill_sat.svg";
-import glyphSun from "./assets/constellation/glyph_sun.svg";
-import constellationLine1 from "./assets/constellation/line1.svg";
-import constellationLine2 from "./assets/constellation/line2.svg";
+import nebulaBg from "./assets/community/nebula.jpg";
+import geminiPatternBg from "./assets/community/gemini_pattern.png";
+import geminiIcon from "./assets/community/gemini_icon.svg";
+import searchIcon from "./assets/community/search_icon.svg";
+import todayDots from "./assets/community/today_dots.svg";
+import todayPill from "./assets/community/today_pill.svg";
+import starPlain from "./assets/community/star_plain.svg";
+import satStar from "./assets/community/sat_star.svg";
+import satIcon from "./assets/community/sat_icon.svg";
+import satDots from "./assets/community/sat_dots.svg";
+import satPill from "./assets/community/sat_pill.svg";
+import chevronLeft from "./assets/community/chevron_left.svg";
+import chevronRight from "./assets/community/chevron_right.svg";
+import missionStar from "./assets/community/mission_star.svg";
+import missionStarDim from "./assets/community/mission_star_dim.svg";
+import missionCheck from "./assets/community/mission_check.svg";
+import foldIcon from "./assets/community/fold_icon.svg";
+import coworkAvatarActive from "./assets/community/cowork_avatar_active.svg";
+import coworkAvatarEnded from "./assets/community/cowork_avatar_ended.svg";
+import smalltalkMara from "./assets/community/smalltalk_mara.jpg";
+import smalltalkKenji from "./assets/community/smalltalk_kenji.jpg";
+import smileyIcon from "./assets/community/smiley_icon.svg";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1654,136 +1667,190 @@ function WhileAsleepRightPanel() {
 // Mirrors Figma node 472:10851 ("커뮤니티") + 575:50702 (Cowork Room detail popup).
 
 type CoworkRoom = {
-  id: string; name: string; time: string; meta: string;
+  id: string; name: string; time: string; status: string; ended?: boolean;
   avatars: { i: string; c: string }[]; extra: number;
   goal: string; modalGoal: string; cta: string;
 };
 const COWORK_ROOMS: CoworkRoom[] = [
   {
-    id: "lofi", name: "Lo-fi Beats to Focus", time: "09:00–09:15", meta: "⏱ 52 min · chilling",
-    avatars: [{ i: "PK", c: "#00d4b4" }, { i: "RT", c: "#4d9fff" }, { i: "아린", c: "#fad4ea" }], extra: 2,
-    goal: "스프린트 보드 정리",
+    id: "lofi1", name: "Lo-fi Beats to Focus", time: "52 min", status: "chilling",
+    avatars: [{ i: "PK", c: "#fd6e8d" }, { i: "RT", c: "#b4d1f3" }, { i: "AR", c: "#7cfbe6" }], extra: 2,
+    goal: "Sprint Board Cleanup",
     modalGoal: "Low-key lo-fi playlist running in the background — drop in, put your headphones on, and get a quiet co-working hour in before the day picks up.",
     cta: "Join Lo-fi Room",
   },
   {
-    id: "rnb", name: "Focus with Rnb", time: "10:00–11:00", meta: "🎧 focusing",
-    avatars: [{ i: "PR", c: "#8b7fe8" }], extra: 0,
-    goal: "PR #42 리뷰",
+    id: "lofi2", name: "Lo-fi Beats to Focus", time: "52 min", status: "chilling",
+    avatars: [{ i: "PK", c: "#fd6e8d" }, { i: "RT", c: "#b4d1f3" }, { i: "An", c: "#7cfbe6" }], extra: 2,
+    goal: "Sprint Board Cleanup",
+    modalGoal: "Low-key lo-fi playlist running in the background — drop in, put your headphones on, and get a quiet co-working hour in before the day picks up.",
+    cta: "Join Lo-fi Room",
+  },
+  {
+    id: "rnb", name: "Focus with Rnb", time: "52 min", status: "chilling",
+    avatars: [{ i: "PR", c: "#8b7fe8" }, { i: "SO", c: "#c2c9e7" }], extra: 1,
+    goal: "PR #42 Review",
     modalGoal: "Deep-focus block for reviewing PR #42 — join if you're heads-down on the same review queue.",
     cta: "Join Review",
   },
   {
-    id: "midnight", name: "Burn the midnight oil", time: "23:00–23:31", meta: "☕ 31 min · focusing",
+    id: "midnight", name: "Burn the midnight oil", time: "31 min", status: "focusing",
     avatars: [{ i: "PN", c: "#fd6e8d" }], extra: 0,
-    goal: "토큰 엣지케이스",
+    goal: "Token Edge Cases",
     modalGoal: "Late-night working session tackling token edge cases before tomorrow's release.",
     cta: "Join Session",
   },
   {
-    id: "mkt", name: "MKT Hot Discussion", time: "13:00–14:00", meta: "💬 discussing",
-    avatars: [{ i: "YS", c: "#fff4a1" }], extra: 0,
-    goal: "캠페인 카피 브레인스토밍",
+    id: "mkt1", name: "MKT Hot Discussion", time: "31 min", status: "focusing",
+    avatars: [{ i: "YS", c: "#fff4a1" }, { i: "DL", c: "#b4d1f3" }], extra: 0,
+    goal: "Token Edge Cases",
     modalGoal: "Open discussion room for marketing's hottest topic of the day.",
     cta: "Join Discussion",
   },
+  {
+    id: "mkt2", name: "MKT Hot Discussion", time: "31 min", status: "focusing",
+    avatars: [{ i: "YS", c: "#fff4a1" }, { i: "HK", c: "#7cfbe6" }], extra: 0,
+    goal: "Token Edge Cases",
+    modalGoal: "Open discussion room for marketing's hottest topic of the day.",
+    cta: "Join Discussion",
+  },
+  {
+    id: "mkt3", name: "MKT Hot Discussion", time: "ended", status: "ended", ended: true,
+    avatars: [{ i: "YS", c: "#9ea8d0" }, { i: "DL", c: "#c2c9e7" }], extra: 0,
+    goal: "Token Edge Cases",
+    modalGoal: "This session has wrapped up — check the recap thread for notes.",
+    cta: "View Recap",
+  },
 ];
-// Scattered layout mirrors Figma's "constellation" canvas (node 472:11131) —
-// each day is a star positioned at its own (cx, cy) rather than a horizontal
-// strip. Coordinates are % of the 1011×488 canvas, taken from the Figma frame.
-type ConstellationDay = {
-  day: string; label: string; meta: string; cx: number; cy: number; size: number;
-  status: "completed" | "open" | "joined" | "none";
-  glyph: string | null; dayColor: string; labelColor: string; metaColor: string;
+
+// Exact star positions from Figma's "stars" frame (node 598:81392), expressed as
+// % of the constellation card's main canvas (1049 × 515). Only THU (today) and
+// SAT carry labels — the other 4 stars are plain unlabeled points.
+type ConstellationStar = {
+  id: string; kind: "today" | "sat" | "plain";
+  cx: number; cy: number;
 };
-// cx/cy = exact % position of the Figma glyph node's center within the
-// 1011×488 canvas (node 472:11131). glyph = exact Figma-exported asset.
-const CONSTELLATION_DAYS: ConstellationDay[] = [
-  { day: "MON 23", label: "Kickoff",       meta: "5 joined",   cx: 16.68, cy: 55.66, size: 55, status: "completed", glyph: glyphCircle, dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
-  { day: "TUE 24", label: "Design sync",   meta: "4 joined",   cx: 32.59, cy: 41.72, size: 55, status: "completed", glyph: glyphCircle, dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
-  { day: "WED 25", label: "Demo day",      meta: "6 joined",   cx: 48.43, cy: 55.66, size: 55, status: "completed", glyph: glyphCircle, dayColor: "#c9d2e3", labelColor: "#9aa3b5", metaColor: "#6b7684" },
-  { day: "TODAY · THU 26", label: "Standup Sync", meta: "＋ Join · 3", cx: 63.11, cy: 40.68, size: 67, status: "joined", glyph: glyphToday, dayColor: "#f5c758", labelColor: "#fce9c0", metaColor: "#231806" },
-  { day: "FRI 27", label: "Design crit",   meta: "Join",       cx: 75.02, cy: 51.40, size: 24, status: "open", glyph: ringFri, dayColor: "#8b95a1", labelColor: "#7c8699", metaColor: "#aeb6c2" },
-  { day: "SAT 28", label: "🎮 Game Night", meta: "＋ RSVP",     cx: 85.16, cy: 36.81, size: 51, status: "open", glyph: glyphSat, dayColor: "#9cc4ff", labelColor: "#9cc4ff", metaColor: "#9cc4ff" },
-  { day: "SUN 29", label: "Rest day",      meta: "",           cx: 94.06, cy: 54.48, size: 18, status: "none", glyph: glyphSun, dayColor: "#6b7684", labelColor: "#5b6678", metaColor: "#5b6678" },
+const CONSTELLATION_STARS: ConstellationStar[] = [
+  { id: "a", kind: "plain", cx: 35.64, cy: 24.99 },
+  { id: "c", kind: "plain", cx: 36.27, cy: 12.88 },
+  { id: "d", kind: "plain", cx: 41.90, cy: 5.29 },
+  { id: "b", kind: "plain", cx: 44.98, cy: 44.66 },
+  { id: "today", kind: "today", cx: 48.09, cy: 17.11 },
+  { id: "sat", kind: "sat", cx: 61.44, cy: 51.28 },
 ];
-// Deterministic star-dust background, seeded so it doesn't reshuffle on rerender.
-const CONSTELLATION_DUST = (() => {
-  const rand = mulberry32(hashStr("constellation-recap"));
-  return Array.from({ length: 46 }, () => ({
-    x: rand() * 100, y: rand() * 100,
-    r: 0.6 + rand() * 1.2, o: 0.15 + rand() * 0.4,
-  }));
-})();
+const CONSTELLATION_LINE_ORDER = ["a", "c", "d", "b", "today", "sat"];
+
+type MissionChip = { label: string; state: "checked" | "active" | "dim" };
+const MISSION_CHIPS: MissionChip[] = [
+  { label: "Cowork Room 1x", state: "checked" },
+  { label: "Focus 30min", state: "checked" },
+  { label: "React to a post", state: "checked" },
+  { label: "Post in Smalltalk", state: "active" },
+  { label: "Vote in Secret Santa", state: "dim" },
+  { label: "Greet a new member", state: "dim" },
+  { label: "7-day streak", state: "dim" },
+];
+
+const ARIA_TAGS = ["UX", "Collaboration", "Figma", "Design System"];
+const ARIA_TASKS = [
+  { title: "Login Module UI Review", dot: "#fff4a1", status: "In Review", statusColor: "#fff4a1" },
+  { title: "Design System Component Cleanup", dot: "#7cfbe6", status: "In Progress", statusColor: "#7cfbe6" },
+  { title: "Sprint 3 Retro Prep", dot: "#bfc7d4", status: "Scheduled", statusColor: "#bfc7d4" },
+  { title: "Design System Component Cleanup", dot: "#657084", status: null, statusColor: null },
+  { title: "Sprint 3 Retro Prep", dot: "#657084", status: null, statusColor: null },
+];
+const SMALLTALK = [
+  { name: "Mara", role: "Product Designer", city: "Vancouver", photo: smalltalkMara, text: "Found this incredible tiramisu at a", likes: 2, comments: 1, views: 1 },
+  { name: "Kenji", role: "Operations", city: "Vancouver", photo: smalltalkKenji, text: "Meet Biscuit, my golden retriever", likes: 2, comments: 1, views: 1 },
+];
 
 function ConstellationCanvas() {
   return (
-    <div className="relative w-full" style={{ aspectRatio: "1011 / 488" }}>
-      {CONSTELLATION_DUST.map((s, i) => (
-        <span
-          key={i}
-          className="absolute rounded-full bg-white"
-          style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.r * 2, height: s.r * 2, opacity: s.o }}
+    <div className="relative w-full overflow-hidden rounded-[21px]" style={{ aspectRatio: "1049 / 515", background: "#03080a" }}>
+      <img
+        src={nebulaBg} alt="" className="absolute pointer-events-none"
+        style={{ left: "67.9%", top: "25.7%", width: "122%", height: "166%", objectFit: "contain", mixBlendMode: "exclusion", opacity: 0.48 }}
+      />
+      <img
+        src={geminiPatternBg} alt="" className="absolute pointer-events-none"
+        style={{ left: "-25%", top: "-23%", width: "160%", height: "260%", objectFit: "cover", opacity: 0.2 }}
+      />
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none">
+        <polyline
+          points={CONSTELLATION_LINE_ORDER.map((id) => {
+            const s = CONSTELLATION_STARS.find((x) => x.id === id)!;
+            return `${s.cx},${s.cy}`;
+          }).join(" ")}
+          fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="0.15" vectorEffect="non-scaling-stroke"
         />
-      ))}
-      {/* Exact Figma connecting-line shapes (Vector 472:11186 / 472:11187) */}
-      <img src={constellationLine1} alt="" className="absolute" style={{ left: "16.65%", top: "38.98%", width: "46.48%", height: "17.75%" }} />
-      <img src={constellationLine2} alt="" className="absolute" style={{ left: "63.13%", top: "38.98%", width: "29.83%", height: "23.34%" }} />
-      {/* Soft gold halo behind today's star (Figma's exported glow asset only carries a
-          placeholder color, so this is reproduced as a CSS radial glow instead). */}
+      </svg>
+      {/* Soft gold halo behind today's star */}
       <span
-        className="absolute rounded-full"
+        className="absolute rounded-full pointer-events-none"
         style={{
-          left: "63.11%", top: "40.68%", width: 130, height: 130, transform: "translate(-50%, -50%)",
+          left: "48.09%", top: "17.11%", width: 130, height: 130, transform: "translate(-50%, -50%)",
           background: "radial-gradient(circle, rgba(245,199,88,0.35) 0%, rgba(245,199,88,0) 70%)",
         }}
       />
-      {CONSTELLATION_DAYS.map((d) => (
+
+      {CONSTELLATION_STARS.map((s) => (
         <div
-          key={d.day}
+          key={s.id}
           className="absolute flex flex-col items-center gap-1"
-          style={{ left: `${d.cx}%`, top: `${d.cy}%`, transform: "translate(-50%, -50%)" }}
+          style={{ left: `${s.cx}%`, top: `${s.cy}%`, transform: "translate(-50%, -50%)" }}
         >
-          <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: d.dayColor }}>{d.day}</span>
-          <div className="relative flex items-center justify-center shrink-0" style={{ width: d.size, height: d.size }}>
-            {d.glyph && <img src={d.glyph} alt="" className="absolute inset-0 w-full h-full" />}
-            {d.status === "completed" && (
-              <img src={glyphCheck} alt="" className="absolute" style={{ width: d.size * 0.27, height: d.size * 0.27, left: "61%", top: "16%" }} />
-            )}
-          </div>
-          <span className="text-[10px] whitespace-nowrap" style={{ color: d.labelColor }}>{d.label}</span>
-          {d.meta && (
-            d.status === "joined" ? (
-              <div className="relative flex items-center justify-center" style={{ width: 67, height: 22 }}>
-                <img src={pillToday} alt="" className="absolute inset-0 w-full h-full" />
-                <span className="relative text-[10px] font-medium whitespace-nowrap" style={{ color: d.metaColor }}>{d.meta}</span>
+          {s.kind === "today" && <span className="text-[13px] font-medium whitespace-nowrap" style={{ color: "#fff4a1" }}>TODAY · THU 26</span>}
+          {s.kind === "sat" && <span className="text-[13px] font-medium whitespace-nowrap" style={{ color: "#c2c9e7" }}>SAT 28</span>}
+          <img
+            src={s.kind === "today" ? glyphToday : s.kind === "sat" ? satStar : starPlain}
+            alt=""
+            style={{ width: s.kind === "today" ? 67 : s.kind === "sat" ? 51 : 55, height: s.kind === "today" ? 67 : s.kind === "sat" ? 51 : 55 }}
+          />
+          {s.kind === "today" && (
+            <>
+              <span className="text-[12px] whitespace-nowrap" style={{ color: "#fce9c0" }}>Standup Sync</span>
+              <img src={todayDots} alt="" style={{ width: 24, height: 6 }} />
+              <div className="relative flex items-center justify-center" style={{ width: 68, height: 20 }}>
+                <img src={todayPill} alt="" className="absolute inset-0 w-full h-full" />
+                <span className="relative text-[12px] font-medium whitespace-nowrap" style={{ color: "#231806" }}>＋ Join · 3</span>
               </div>
-            ) : d.status === "open" && d.day === "SAT 28" ? (
-              <div className="relative flex items-center justify-center" style={{ width: 59, height: 20 }}>
-                <img src={pillSat} alt="" className="absolute inset-0 w-full h-full" />
-                <span className="relative text-[10px] font-medium whitespace-nowrap" style={{ color: d.metaColor }}>{d.meta}</span>
+            </>
+          )}
+          {s.kind === "sat" && (
+            <>
+              <div className="flex items-center gap-0.5">
+                <img src={satIcon} alt="" style={{ width: 16, height: 16 }} />
+                <span className="text-[12px] whitespace-nowrap" style={{ color: "#c2c9e7" }}>Game Night</span>
               </div>
-            ) : d.status === "open" ? (
-              <span className="rounded-full border px-2.5 py-0.5 text-[10px] font-medium whitespace-nowrap" style={{ borderColor: "#5b6678", color: d.metaColor }}>{d.meta}</span>
-            ) : (
-              <span className="text-[10px] whitespace-nowrap" style={{ color: d.metaColor }}>{d.meta}</span>
-            )
+              <img src={satDots} alt="" style={{ width: 15, height: 6 }} />
+              <div className="relative flex items-center justify-center" style={{ width: 60, height: 20 }}>
+                <img src={satPill} alt="" className="absolute inset-0 w-full h-full" />
+                <span className="relative text-[12px] font-medium whitespace-nowrap" style={{ color: "#c2c9e7" }}>＋ Join</span>
+              </div>
+            </>
           )}
         </div>
       ))}
+
+      <div className="absolute flex flex-col gap-1.5 items-start" style={{ left: 18, bottom: 12 }}>
+        <span className="text-[13px] font-semibold whitespace-nowrap" style={{ color: "#f0f1f5" }}>3/7 stars collected</span>
+        <span className="text-[13px] font-medium whitespace-nowrap" style={{ color: "#9ea8d0" }}>Complete 4 more to unlock Ursa Major badge</span>
+      </div>
+
+      <div className="absolute flex flex-col items-end gap-2" style={{ right: 14, top: 16 }}>
+        <div className="flex items-center rounded-xl border p-1" style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.04)" }}>
+          <span className="rounded-[10px] px-4.5 py-1.5 text-[13px] font-medium" style={{ background: "#fff4a1", color: "#1d202b" }}>Week</span>
+          <span className="rounded-[10px] px-4.5 py-1.5 text-[13px] font-medium" style={{ color: "#bfc7d4" }}>Month</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <img src={chevronLeft} alt="" style={{ width: 14, height: 14 }} />
+          <span className="text-[13px] font-medium whitespace-nowrap" style={{ color: "#bfc7d4" }}>Jun 23 – Jun 29 · W26</span>
+          <img src={chevronRight} alt="" style={{ width: 14, height: 14 }} />
+        </div>
+      </div>
     </div>
   );
 }
-const SMALLTALK = [
-  { initials: "MA", name: "Mara", city: "Lisbon",    time: "09:12", text: "Found the BEST pastéis de nata near the office", likes: 12, comments: 4 },
-  { initials: "DV", name: "Dev",  city: "Bangalore", time: "14:40", text: "Monsoon finally here, working to the sound of rain 🌧️ peak focus mode unlocked", likes: 9, comments: 2 },
-];
-const SPOTLIGHT_TAGS = ["UX", "협업", "피그마", "디자인시스템"];
-const SPOTLIGHT_TASKS = [
-  { title: "로그인 모듈 UI 리뷰",        status: "검토중" },
-  { title: "디자인 시스템 컴포넌트 정리", status: "진행중" },
-  { title: "스프린트 3 회고 준비",       status: "예정"   },
-];
 
 function CoworkRoomModal({ room, onClose }: { room: CoworkRoom; onClose: () => void }) {
   return (
@@ -1800,7 +1867,7 @@ function CoworkRoomModal({ room, onClose }: { room: CoworkRoom; onClose: () => v
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[15px] font-semibold text-[#e8edf8]">🎧 {room.name}</p>
-            <p className="text-[11px] text-[#657084] mt-0.5">{room.time}</p>
+            <p className="text-[11px] text-[#657084] mt-0.5">{room.ended ? "Session ended" : `${room.time} · ${room.status}`}</p>
           </div>
           <button onClick={onClose} className="text-[#657084]"><X size={16} /></button>
         </div>
@@ -1855,82 +1922,88 @@ function CommunityView() {
         </div>
 
         <div
-          className="rounded-[24px] border p-5"
-          style={{ borderColor: "rgba(255,255,255,0.07)", background: "linear-gradient(180deg, rgba(18,21,32,0.92) 0%, rgba(11,13,21,0.92) 100%)", boxShadow: "0px 18px 50px 0px rgba(0,0,0,0.45)" }}
+          className="flex flex-col gap-3 rounded-[24px] border p-5"
+          style={{ borderColor: "rgba(255,255,255,0.07)", background: "linear-gradient(180deg, #222631 0%, #151920 100%)", boxShadow: "0px 18px 50px 0px rgba(0,0,0,0.45)" }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-[18px] font-extrabold text-[#f4f6fb]">Constellation Recap</p>
-              <p className="text-[12.5px] text-[#7c8699] mt-0.5">Every connection you made today becomes a star in your constellation</p>
-            </div>
-            <div className="flex flex-col items-end gap-2 shrink-0">
-              <div className="flex rounded-xl border p-1" style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.04)" }}>
-                {["Week", "Month"].map((t) => (
-                  <span key={t} className="rounded-[10px] px-4 py-1.5 text-[13px] font-semibold" style={{ background: t === "Week" ? "#3c3c3c" : "transparent", color: t === "Week" ? "#ffffff" : "#9aa3b5" }}>{t}</span>
-                ))}
+              <div className="flex items-center gap-2">
+                <img src={geminiIcon} alt="" style={{ width: 28, height: 27 }} />
+                <span className="text-[20px] font-semibold text-[#f0f1f5]">Constellation Recap</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <ChevronLeft size={14} color="#7c8699" />
-                <span className="text-[12px] font-semibold text-[#aeb6c2]">Jun 23 – Jun 29 · W26</span>
-                <ChevronRight size={14} color="#7c8699" />
-              </div>
+              <p className="text-[13px] text-[#657084] mt-1 pl-[38px]">Every connection you made today becomes a star in your constellation</p>
             </div>
-          </div>
-          <div className="flex items-center gap-4 pt-2 mt-2">
-            <div className="flex items-center gap-1.5">
-              <span className="rounded-full" style={{ width: 9, height: 9, background: "#f5c758", boxShadow: "0 0 8px rgba(245,199,88,0.8)" }} />
-              <span className="text-[11.5px] font-semibold text-[#c9d2e3]">Joined</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="rounded-full border" style={{ width: 9, height: 9, borderColor: "#4a5364" }} />
-              <span className="text-[11.5px] font-semibold text-[#8b95a1]">Open · tap to join</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="flex items-center justify-center rounded-full" style={{ width: 14, height: 14, background: "#15c47e" }}>
-                <CheckCircle2 size={9} color="#0a0f15" />
-              </span>
-              <span className="text-[11.5px] font-semibold text-[#8b95a1]">Completed</span>
+            <div className="flex items-center gap-2 rounded-xl border px-3.5 py-2.5 shrink-0" style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.04)", width: 280 }}>
+              <img src={searchIcon} alt="" style={{ width: 16, height: 16 }} />
+              <span className="text-[13px] font-semibold text-[#657084]">Describe what you are looking for ... </span>
             </div>
           </div>
           <ConstellationCanvas />
+          <div className="flex flex-wrap items-center gap-2">
+            {MISSION_CHIPS.map((c) => {
+              const lit = c.state === "checked" || c.state === "active";
+              return (
+                <div
+                  key={c.label}
+                  className="flex items-center gap-1.5 rounded-full border px-2.5 py-1.5"
+                  style={{
+                    background: c.state === "active" ? "rgba(255,244,161,0.08)" : c.state === "checked" ? "rgba(255,244,161,0.05)" : "rgba(255,255,255,0.04)",
+                    borderColor: c.state === "active" ? "#fff4a1" : c.state === "checked" ? "rgba(255,244,161,0.2)" : "rgba(255,255,255,0.07)",
+                  }}
+                >
+                  <img src={lit ? missionStar : missionStarDim} alt="" style={{ width: 14, height: 14 }} />
+                  <span className="text-[12px] font-medium whitespace-nowrap" style={{ color: lit ? "#fff4a1" : "#9ea8d0" }}>{c.label}</span>
+                  {c.state === "checked" && <img src={missionCheck} alt="" style={{ width: 14, height: 14 }} />}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="rounded-xl border p-4" style={{ borderColor: "#303644" }}>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-[15px] font-semibold text-[#e8edf8]">🎧 Cowork Room</p>
-              <p className="text-[11px] text-[#657084]">지금 63명 집중 중 · 오늘 총 215명 참여</p>
+              <p className="text-[16px] font-semibold text-[#f0f1f5]">Cowork Room</p>
+              <p className="text-[13px] text-[#9ea8d0]">63 Active Now | 215 Joined Today</p>
             </div>
-            <button className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold text-[#0a0f15]" style={{ background: "#fff4a1" }}>
-              <Plus size={12} /> 방 추가하기
+            <button className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold text-[#e0e5eb]" style={{ background: "#373e4e" }}>
+              <Plus size={12} /> Add Room
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex gap-3 overflow-x-auto pb-1">
             {COWORK_ROOMS.map((room) => (
               <button
                 key={room.id}
                 onClick={() => setOpenRoom(room)}
-                className="flex flex-col gap-2 rounded-xl p-3 text-left"
-                style={{ background: "rgba(255,255,255,0.03)" }}
+                className="relative flex flex-col justify-between gap-2 rounded-xl p-3 text-left shrink-0"
+                style={{ width: 180, height: 126, background: "#222631", border: "1px solid rgba(255,255,255,0.07)" }}
               >
-                <p className="text-[13px] font-semibold text-[#e8edf8]">{room.name}</p>
-                <p className="text-[11px] text-[#657084]">{room.meta}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex isolate">
+                <img src={foldIcon} alt="" className="absolute" style={{ top: 8, right: 8, width: 14, height: 14, transform: "rotate(90deg)" }} />
+                <div>
+                  <p className="text-[13px] font-semibold" style={{ color: room.ended ? "#e0e5eb" : "#e8edf8" }}>{room.name}</p>
+                  <p className="text-[11px]" style={{ color: room.ended ? "#4e5669" : "#657084" }}>
+                    {room.ended ? "ended" : `${room.time} · ${room.status}`}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex isolate items-center">
+                    <div className="mr-[-6px]" style={{ zIndex: room.avatars.length + 1 }}>
+                      <img src={room.ended ? coworkAvatarEnded : coworkAvatarActive} alt="" style={{ width: 20, height: 20 }} />
+                    </div>
                     {room.avatars.map((a, i) => (
                       <div key={i} className="mr-[-6px]" style={{ zIndex: room.avatars.length - i }}>
-                        <div className="flex items-center justify-center rounded-xl border-2 border-[#0a0f15]" style={{ width: 24, height: 24, background: a.c }}>
-                          <span className="text-[9px] font-semibold" style={{ color: "#0a0f15" }}>{a.i}</span>
+                        <div className="flex items-center justify-center rounded-lg border-2 border-[#222631]" style={{ width: 20, height: 20, background: room.ended ? "#9ea8d0" : a.c }}>
+                          <span className="text-[8px] font-semibold" style={{ color: "#0a0f15" }}>{a.i}</span>
                         </div>
                       </div>
                     ))}
                     {room.extra > 0 && (
-                      <div className="flex items-center justify-center rounded-xl border-2 border-[#0a0f15]" style={{ width: 24, height: 24, background: "#657084" }}>
-                        <span className="text-[9px] font-semibold text-white">+{room.extra}</span>
+                      <div className="flex items-center justify-center rounded-lg border-2 border-[#222631]" style={{ width: 20, height: 20, background: "#c2c9e7" }}>
+                        <span className="text-[8px] font-semibold text-[#0a0f15]">+{room.extra}</span>
                       </div>
                     )}
                   </div>
-                  <span className="text-[10px] text-[#5a7099]">오늘 목표 · {room.goal}</span>
+                  <span className="text-[10px]" style={{ color: room.ended ? "#9ea8d0" : "#5a7099" }}>Goal · {room.goal}</span>
                 </div>
               </button>
             ))}
@@ -1949,54 +2022,96 @@ function CommunityRightPanel() {
       className="absolute flex flex-col rounded-[20px] border border-[#2b2c2d] overflow-hidden overflow-y-auto"
       style={{ top: 128, right: 16, bottom: 16, width: 280, background: "rgba(26,27,29,0.92)", backdropFilter: "blur(16px)", zIndex: 20, pointerEvents: "auto" }}
     >
-      <div className="border-b border-[rgba(77,159,255,0.12)] px-4 py-4">
-        <span className="text-white text-[16px] font-semibold">Who will take care of this week</span>
+      <div className="flex items-center justify-between border-b border-[rgba(77,159,255,0.12)] px-4 py-4">
+        <span className="text-white text-[16px] font-semibold">Secret Santa</span>
+        <span className="rounded-full border px-2 py-0.5 text-[12px]" style={{ background: "#303644", borderColor: "#434a5c", color: "#d2d6e1" }}>D-3 Reveal</span>
       </div>
       <div className="p-4 flex flex-col gap-3 border-b" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-        <div className="flex items-center gap-3">
-          <Avatar initials="FA" color="#fd6e8d" size={36} online={true} />
-          <div className="min-w-0">
-            <p className="text-[14px] font-semibold text-[#e8edf8]">Fatima Al-Zahra</p>
-            <p className="text-[11px] text-[#657084]">Product Designer</p>
-            <p className="text-[11px] text-[#657084]">🇦🇪 Dubai · GST 11:44</p>
-          </div>
-        </div>
-        <p className="text-[12px] leading-relaxed text-[#bfc7d4]">
-          디테일에 집착하는 디자이너. 사막 일출 보며 아이디어 정리하는 게 낙이에요 🌅 피그마 플러그인 덕후이기도 해요.
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {SPOTLIGHT_TAGS.map((t) => (
-            <span key={t} className="rounded-full px-2 py-1 text-[10px] font-semibold text-[#bfc7d4]" style={{ background: "#252932" }}>{t}</span>
-          ))}
-        </div>
-        <div>
-          <p className="text-[11px] font-semibold text-[#657084] mb-1.5">현재 진행 업무</p>
-          <div className="flex flex-col gap-1.5">
-            {SPOTLIGHT_TASKS.map((t) => (
-              <div key={t.title} className="flex items-center justify-between">
-                <span className="text-[12px] text-[#e8edf8]">{t.title}</span>
-                <span className="text-[10px] text-[#5a7099]">{t.status}</span>
+        <div className="rounded-2xl p-3 flex flex-col gap-3" style={{ background: "rgba(48,54,68,0.5)" }}>
+          <p className="text-[13px] font-semibold" style={{ color: "#bfc7d4" }}>Who will take care of this week</p>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Avatar initials="AC" color="#4d9fff" size={28} />
+              <span className="absolute rounded-full border-2 border-[#070d1a]" style={{ right: 0, bottom: 0, width: 8, height: 8, background: "#fff4a1" }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[14px] font-semibold text-[#e8edf8]">Aria <span className="text-[10px] font-normal text-[#55585f]">Product Designer</span></p>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="text-[12px] text-[#55585f]">🇦🇪 Dubai | GST 11:44</span>
+                <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold" style={{ background: "#434a5c", color: "#d2d6e1" }}>+16h</span>
               </div>
-            ))}
+            </div>
           </div>
+          <div>
+            <p className="text-[10px] font-semibold text-[#657084] mb-1">About</p>
+            <p className="text-[13px] leading-relaxed text-[#bfc7d4]">
+              A detail-obsessed designer. I love organizing ideas while watching desert sunrises 🌅 Also a Figma plugin enthusiast.
+            </p>
+          </div>
+          <div>
+            <p className="text-[13px] font-semibold text-[#bfc7d4] mb-1.5">Her Interests</p>
+            <div className="flex flex-wrap gap-1.5">
+              {ARIA_TAGS.map((t) => (
+                <span key={t} className="rounded-full border px-2 py-1 text-[10px] font-semibold" style={{ borderColor: "#657084", color: "#bfc7d4", background: "#303644" }}>{t}</span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-[13px] font-semibold text-[#bfc7d4] mb-1.5">Current Tasks</p>
+            <div className="flex flex-col gap-1">
+              {ARIA_TASKS.map((t, i) => (
+                <div key={i} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5" style={{ background: "#303644" }}>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="rounded-full shrink-0" style={{ width: 6, height: 6, background: t.dot }} />
+                    <span className="text-[12px] truncate" style={{ color: t.status ? "#e8edf8" : "#657084" }}>{t.title}</span>
+                  </div>
+                  {t.status && (
+                    <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold" style={{ background: `${t.statusColor}1f`, color: t.statusColor! }}>{t.status}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <button className="rounded-full border py-2 text-[16px]" style={{ background: "rgba(180,209,243,0.2)", borderColor: "#b4d1f3", color: "#b4d1f3" }}>
+            Send Anonymous Cheer
+          </button>
         </div>
       </div>
 
       <div className="p-4 flex flex-col gap-3">
-        <p className="text-[13px] font-semibold text-[#bfc7d4]">This Week's Smalltalk</p>
+        <p className="text-[15px] font-semibold text-white">This Week's Smalltalk</p>
         {SMALLTALK.map((s) => (
-          <div key={s.initials} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)" }}>
-            <div className="flex items-center gap-2 mb-1.5">
-              <Avatar initials={s.initials} size={22} />
-              <span className="text-[12px] font-semibold text-[#e8edf8]">{s.name}</span>
-              <span className="text-[11px] text-[#5a7099]">{s.city} · {s.time}</span>
+          <div key={s.name} className="rounded-xl p-3 flex flex-col gap-2.5" style={{ background: "rgba(48,54,68,0.5)" }}>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Avatar initials="AC" color="#4d9fff" size={28} />
+                <span className="absolute rounded-full border-2 border-[#070d1a]" style={{ right: 0, bottom: 0, width: 8, height: 8, background: "#fff4a1" }} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[14px] font-semibold text-[#e8edf8]">{s.name} <span className="text-[10px] font-normal text-[#55585f]">{s.role}</span></p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="text-[12px] text-[#55585f]">{s.city}</span>
+                  <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold" style={{ background: "#252932", color: "#55585f" }}>+16h</span>
+                </div>
+              </div>
             </div>
-            <p className="text-[12px] leading-relaxed text-[#cecece] mb-1.5">{s.text}</p>
-            <span className="text-[11px] text-[#657084]">❤️ {s.likes} · 💬 {s.comments}</span>
+            <img src={s.photo} alt="" className="w-full rounded-lg object-cover" style={{ height: 128 }} />
+            <p className="text-[13px] font-semibold text-[#bfc7d4]">{s.text}</p>
+            <div className="flex items-end gap-0.5">
+              <span className="flex items-center gap-1 rounded px-1 h-5 text-[12px]" style={{ background: "#222631", color: "#bfc7d4" }}>❤️ {s.likes}</span>
+              <span className="flex items-center gap-1 rounded px-1 h-5 text-[12px]" style={{ background: "#222631", color: "#bfc7d4" }}>💬 {s.comments}</span>
+              <span className="flex items-center gap-1 rounded px-1 h-5 text-[12px]" style={{ background: "#222631", color: "#bfc7d4" }}>👀 {s.views}</span>
+              <span className="flex items-center justify-center rounded px-1 h-5" style={{ background: "#222631" }}>
+                <img src={smileyIcon} alt="" style={{ width: 16, height: 16 }} />
+              </span>
+            </div>
+            <button className="rounded-full border py-1.5 text-[13px] font-semibold" style={{ background: "rgba(194,201,231,0.15)", borderColor: "rgba(194,201,231,0.3)", color: "#c2c9e7" }}>
+              Send Anonymous Cheer
+            </button>
           </div>
         ))}
-        <button className="rounded-full border py-2 text-[12px] font-semibold text-[#bfc7d4]" style={{ borderColor: "#303644" }}>
-          다음 스몰톡 주자 투표하기
+        <button className="rounded-full border py-2 text-[16px]" style={{ background: "rgba(180,209,243,0.2)", borderColor: "#b4d1f3", color: "#b4d1f3" }}>
+          Vote for Next Speaker
         </button>
       </div>
     </aside>
