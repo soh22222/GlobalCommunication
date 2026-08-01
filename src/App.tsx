@@ -361,7 +361,7 @@ function GoldenWindowBar() {
     <div className="flex-1 min-w-0" style={{ pointerEvents: "auto" }}>
       <div className="flex justify-between px-0 mb-1">
         {["09:00", "12:00", "15:00", "18:00"].map((t) => (
-          <span key={t} className="text-[16px] text-[#797979]" style={{ fontFamily: "SUIT, Inter, sans-serif", letterSpacing: "-0.32px" }}>{t}</span>
+          <span key={t} className="text-[12px] text-[#55585f]" style={{ fontFamily: "SUIT, Inter, sans-serif" }}>{t}</span>
         ))}
       </div>
       <div ref={wrapRef} className="relative h-12 rounded-full bg-[#131820] border border-[#303644]">
