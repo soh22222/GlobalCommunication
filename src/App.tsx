@@ -341,11 +341,22 @@ const WORK_START_MIN = 9 * 60; // 09:00
 const WORK_END_MIN = 18 * 60; // 18:00
 
 function GoldenWindowBar() {
-  const [hovered, setHovered] = useState(false);
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const nowMin = useKstMinutes();
   // Bar starts full at 09:00 and shrinks from the right edge, hitting 0 width at 18:00.
   const elapsed = Math.min(Math.max(nowMin - WORK_START_MIN, 0), WORK_END_MIN - WORK_START_MIN);
   const rightInset = (elapsed / (WORK_END_MIN - WORK_START_MIN)) * 100;
+
+  // Opens on hover; once open, only closes when the user clicks outside it.
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
 
   return (
     <div className="flex-1 min-w-0" style={{ pointerEvents: "auto" }}>
@@ -354,12 +365,11 @@ function GoldenWindowBar() {
           <span key={t} className="text-[13px] text-[#797979]" style={{ fontFamily: "Inter, sans-serif" }}>{t}</span>
         ))}
       </div>
-      <div className="relative h-12 rounded-full bg-[#131820] border border-[#303644]">
+      <div ref={wrapRef} className="relative h-12 rounded-full bg-[#131820] border border-[#303644]">
         <div
           className="absolute top-0 h-full bg-white rounded-full flex items-center justify-between px-6 overflow-hidden cursor-pointer"
           style={{ left: "0%", right: `${rightInset}%`, transition: "right 1s linear" }}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
+          onMouseEnter={() => setOpen(true)}
         >
           <div className="flex items-center">
             {GOLDEN_LEFT.map((c, i) => <Chip key={i} {...c} />)}
@@ -377,7 +387,7 @@ function GoldenWindowBar() {
             {GOLDEN_RIGHT.map((c, i) => <Chip key={i} {...c} />)}
           </div>
         </div>
-        {hovered && <ActiveTeamMembersPopover />}
+        {open && <ActiveTeamMembersPopover />}
       </div>
     </div>
   );
@@ -390,10 +400,9 @@ function ActiveTeamMembersPopover() {
     <div
       className="absolute rounded-[20px] border border-[#2b2c2d] overflow-hidden flex flex-col"
       style={{
-        top: "calc(100% + 8px)", left: 0, width: 313, maxHeight: 420,
+        top: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", width: 313, maxHeight: 420,
         background: "#1a1b1d", boxShadow: "0 16px 40px rgba(0,0,0,0.5)", zIndex: 40,
       }}
-      onMouseEnter={(e) => e.stopPropagation()}
     >
       <div className="border-b border-[rgba(77,159,255,0.12)] px-4 py-4 shrink-0">
         <span className="text-white text-[16px] font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>Active Team Members</span>
