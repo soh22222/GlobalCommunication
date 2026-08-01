@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useContext, createContext } from "react";
 import * as d3 from "d3";
 import { feature } from "topojson-client";
 import {
@@ -227,6 +227,7 @@ function Avatar({ initials, color = "#4D9FFF", size = 28, online = false }: {
 // Hover card shown when pointing at a city marker on the globe.
 // Mirrors Figma node 799:93862 — gradient card + "Send DM" CTA.
 function PersonCard({ m }: { m: Marker }) {
+  const { navigate } = useNav();
   const p = m.members[0];
   const extra = m.members.length - 1;
   return (
@@ -277,9 +278,13 @@ function PersonCard({ m }: { m: Marker }) {
           </div>
         )}
       </div>
-      <div className="flex w-full items-center justify-center rounded-full" style={{ background: "#b4d1f3", padding: "6px 16px" }}>
+      <button
+        onClick={() => navigate("chat", { dmTarget: p.name })}
+        className="flex w-full items-center justify-center rounded-full cursor-pointer"
+        style={{ background: "#b4d1f3", padding: "6px 16px" }}
+      >
         <span className="text-[16px] font-semibold" style={{ color: "#0d1a14" }}>Send DM</span>
-      </div>
+      </button>
     </div>
   );
 }
@@ -383,7 +388,7 @@ function GoldenWindowBar() {
             </div>
           </div>
         </div>
-        {open && <ActiveTeamMembersPopover />}
+        {open && <ActiveTeamMembersPopover onClose={() => setOpen(false)} />}
       </div>
     </div>
   );
@@ -391,7 +396,9 @@ function GoldenWindowBar() {
 
 // Hover popover on the Golden Window bar — mirrors Figma "Active Team Members"
 // (node 575:44021): reuses the same roster shown in RightSidebar's Time Zone list.
-function ActiveTeamMembersPopover() {
+// Clicking a member jumps to Calendar to schedule a meeting with them (scenario 2).
+function ActiveTeamMembersPopover({ onClose }: { onClose: () => void }) {
+  const { navigate } = useNav();
   return (
     <div
       className="absolute rounded-[20px] border border-[#2b2c2d] overflow-hidden flex flex-col"
@@ -405,7 +412,11 @@ function ActiveTeamMembersPopover() {
       </div>
       <div className="flex-1 overflow-y-auto flex flex-col">
         {TZ_MEMBERS.map((m, i) => (
-          <div key={i} className="flex items-center justify-between px-4 py-3 border-b border-[rgba(77,159,255,0.06)]">
+          <button
+            key={i}
+            onClick={() => { navigate("calendar", { inviteeName: m.name }); onClose(); }}
+            className="flex items-center justify-between px-4 py-3 border-b border-[rgba(77,159,255,0.06)] text-left"
+          >
             <div className="flex items-center gap-3 min-w-0">
               <Avatar initials={m.initials} color={AVATAR_COLORS[i % AVATAR_COLORS.length]} online={true} />
               <div className="min-w-0">
@@ -420,7 +431,7 @@ function ActiveTeamMembersPopover() {
               </div>
             </div>
             <span className="text-[24px] font-bold text-[#e8edf8] shrink-0" style={{ fontFamily: "Inter, sans-serif" }}>{m.time}</span>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -428,6 +439,24 @@ function ActiveTeamMembersPopover() {
 }
 
 type View = "dashboard" | "chat" | "calendar" | "while-asleep" | "community";
+
+// Cross-view navigation for the 3 Wizard-of-Oz test scenarios — lets any leaf
+// component (e.g. a globe hover card's "Send DM", a Golden Window popover row)
+// jump to another view while carrying a bit of context (who to DM / invite).
+type NavParams = { dmTarget?: string; inviteeName?: string };
+type ScheduledMeeting = { invitee: string; day: number };
+type NavContextValue = {
+  navigate: (v: View, params?: NavParams) => void;
+  params: NavParams;
+  scheduledMeeting: ScheduledMeeting | null;
+  scheduleMeeting: (invitee: string) => void;
+};
+const NavContext = createContext<NavContextValue | null>(null);
+function useNav() {
+  const ctx = useContext(NavContext);
+  if (!ctx) throw new Error("useNav must be used within NavContext.Provider");
+  return ctx;
+}
 
 const NAV_ITEMS: { icon: typeof LayoutDashboard; label: string; view: View | null; badge: string | null }[] = [
   { icon: LayoutDashboard, label: "Dashboard",    view: "dashboard",    badge: null },
@@ -546,6 +575,7 @@ function LeftSidebar({ view, onNavigate }: { view: View; onNavigate: (v: View) =
 
 // Mirrors Figma node 813:26278 — the full Time Zone roster.
 const TZ_MEMBERS = [
+  { initials: "MY", name: "Maya",     dept: "Engineering", city: "Berlin",      offset: "+1h",  time: "10:15" },
   { initials: "AC", name: "Aria",     dept: "Design",      city: "Vancouver",   offset: "+16h", time: "09:15" },
   { initials: "MI", name: "Mika",     dept: "Finance",     city: "Tokyo",       offset: "±0h",  time: "09:15" },
   { initials: "PR", name: "Priya",    dept: "People",      city: "New York",    offset: "−13h", time: "20:15" },
@@ -653,12 +683,11 @@ const CHANNELS = {
   ],
 };
 const DIRECT_MESSAGES = [
-  { initials: "MC", name: "Marcus", active: true },
-  { initials: "AC", name: "Aria", active: false },
-  { initials: "AC", name: "Aria", active: false },
+  { initials: "MC", name: "Marcus" },
+  { initials: "AC", name: "Aria" },
 ];
 
-function ChannelSidebar() {
+function ChannelSidebar({ activeDM, onSelectDM }: { activeDM: string; onSelectDM: (name: string) => void }) {
   return (
     <aside
       className="flex flex-col overflow-y-auto shrink-0 border-r"
@@ -685,37 +714,42 @@ function ChannelSidebar() {
       ))}
       <div className="w-full py-4">
         <p className="text-[13px] font-semibold mb-1" style={{ color: "#bfc7d4", fontFamily: "SUIT, Inter, sans-serif" }}>Direct</p>
-        {DIRECT_MESSAGES.map((d, i) => (
-          <button
-            key={i}
-            className="flex w-full items-center gap-[7px] rounded-xl"
-            style={{
-              padding: 9,
-              background: d.active ? "rgba(158,168,208,0.1)" : "transparent",
-              border: d.active ? "1px solid rgba(158,168,208,0.25)" : "1px solid transparent",
-            }}
-          >
-            <div
-              className="flex items-center justify-center rounded-xl shrink-0"
-              style={{ width: 28, height: 28, background: "rgba(77,159,255,0.13)", border: "1px solid rgba(77,159,255,0.27)" }}
+        {DIRECT_MESSAGES.map((d, i) => {
+          const active = d.name === activeDM;
+          return (
+            <button
+              key={i}
+              onClick={() => onSelectDM(d.name)}
+              className="flex w-full items-center gap-[7px] rounded-xl"
+              style={{
+                padding: 9,
+                background: active ? "rgba(158,168,208,0.1)" : "transparent",
+                border: active ? "1px solid rgba(158,168,208,0.25)" : "1px solid transparent",
+              }}
             >
-              <span className="text-[10px] font-semibold" style={{ color: "#4d9fff" }}>{d.initials}</span>
-            </div>
-            <span className="text-[13px]" style={{ color: d.active ? "#faffdd" : "#657084", fontFamily: d.active ? "SUIT, Inter, sans-serif" : "Inter, sans-serif", fontWeight: d.active ? 600 : 500 }}>
-              {d.name}
-            </span>
-          </button>
-        ))}
+              <div
+                className="flex items-center justify-center rounded-xl shrink-0"
+                style={{ width: 28, height: 28, background: "rgba(77,159,255,0.13)", border: "1px solid rgba(77,159,255,0.27)" }}
+              >
+                <span className="text-[10px] font-semibold" style={{ color: "#4d9fff" }}>{d.initials}</span>
+              </div>
+              <span className="text-[13px]" style={{ color: active ? "#faffdd" : "#657084", fontFamily: active ? "SUIT, Inter, sans-serif" : "Inter, sans-serif", fontWeight: active ? 600 : 500 }}>
+                {d.name}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </aside>
   );
 }
 
-function WorkChatHeader() {
+function WorkChatHeader({ activeDM }: { activeDM: string }) {
   return (
     <div className="flex items-center justify-between border-b px-[17.5px] pt-3.5 pb-px shrink-0" style={{ borderColor: "#222631" }}>
       <div className="flex items-center gap-3.5">
         <span className="text-[16px] font-semibold text-white" style={{ fontFamily: "SUIT, Inter, sans-serif" }}>Work Chat</span>
+        <span className="text-[12px]" style={{ color: "#657084" }}>DM with {activeDM}</span>
         <div className="flex items-center gap-3.5">
           <div className="pb-1.5 border-b-2" style={{ borderColor: "#b4d1f3" }}>
             <span className="text-[10.5px] font-medium" style={{ color: "#b4d1f3" }}>All</span>
@@ -795,10 +829,12 @@ function ChatBubble({ m }: { m: Message }) {
             <Smile size={16} color="#a8b4cc" strokeWidth={1.8} />
           </div>
         </div>
-        <div className="flex items-center gap-1 h-6">
-          <span className="text-[13px] font-semibold" style={{ color: "#4ecdc4" }}>💬 {m.replies} replies</span>
-          <span className="text-[12px]" style={{ color: "#6b7a99" }}>{m.repliesAgo}</span>
-        </div>
+        {m.replies > 0 && (
+          <div className="flex items-center gap-1 h-6">
+            <span className="text-[13px] font-semibold" style={{ color: "#4ecdc4" }}>💬 {m.replies} replies</span>
+            <span className="text-[12px]" style={{ color: "#6b7a99" }}>{m.repliesAgo}</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -806,12 +842,66 @@ function ChatBubble({ m }: { m: Message }) {
 
 const TONE_PILLS = ["Tone Assist", "Professional", "Collaborative", "Direct"];
 
-function ChatInput() {
+// Deterministic mock "tone correction" — the actual AI rewrite is out of scope
+// for this Wizard-of-Oz prototype; this just has to look/feel like a real
+// suggestion the user can preview and accept before sending.
+function toneAssistPreview(text: string): string {
+  const t = text.trim();
+  if (!t) return "";
+  const capitalized = t[0].toUpperCase() + t.slice(1);
+  const body = /[.!?]$/.test(capitalized) ? capitalized : `${capitalized}.`;
+  return `Hi, hope you're doing well — ${body[0].toLowerCase()}${body.slice(1)} Thanks!`;
+}
+
+function ChatInput({ onSend }: { onSend: (text: string) => void }) {
+  const [text, setText] = useState("");
+  const [toneSuggestion, setToneSuggestion] = useState<string | null>(null);
+
+  const handleSend = () => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    onSend(trimmed);
+    setText("");
+    setToneSuggestion(null);
+  };
+
   return (
     <div className="shrink-0 px-3.5 pt-2.5">
+      {toneSuggestion && (
+        <div className="mb-2 rounded-xl border px-4 py-3 flex flex-col gap-2" style={{ background: "#161b26", borderColor: "#4d9fff" }}>
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={13} color="#4d9fff" strokeWidth={2} />
+            <span className="text-[11px] font-semibold" style={{ color: "#4d9fff" }}>Tone Assist suggestion</span>
+          </div>
+          <p className="text-[13px] leading-relaxed" style={{ color: "#d2d6e1" }}>{toneSuggestion}</p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setText(toneSuggestion); setToneSuggestion(null); }}
+              className="rounded-lg px-3 py-1 text-[12px] font-semibold"
+              style={{ background: "#4d9fff", color: "#0a0f15" }}
+            >
+              Apply
+            </button>
+            <button
+              onClick={() => setToneSuggestion(null)}
+              className="rounded-lg px-3 py-1 text-[12px] font-semibold"
+              style={{ background: "#303644", color: "#bfc7d4" }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
       <div className="rounded-xl border" style={{ background: "#131820", borderColor: "#303644" }}>
         <div className="border-b px-4 pt-2 pb-2.5" style={{ borderColor: "#303644" }}>
-          <span className="text-[12px]" style={{ color: "#434a5c" }}>Enter a message</span>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
+            placeholder="Enter a message"
+            className="w-full bg-transparent outline-none text-[13px]"
+            style={{ color: "#e2e8f4" }}
+          />
         </div>
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
@@ -819,20 +909,30 @@ function ChatInput() {
             <ImageIcon size={20} color="#d2d6e1" strokeWidth={1.7} />
             <Smile size={20} color="#d2d6e1" strokeWidth={1.7} />
             <div className="w-px h-3.5 mx-1" style={{ background: "rgba(255,255,255,0.07)" }} />
-            {TONE_PILLS.map((label) => (
-              <div
-                key={label}
-                className="flex items-center gap-1 rounded-lg border px-2.5 py-1 opacity-50"
-                style={{ background: "#222631", borderColor: "#d2d6e1" }}
-              >
-                {label === "Tone Assist" && <Sparkles size={11} color="#d2d6e1" strokeWidth={2} />}
-                <span className="text-[12px]" style={{ color: "#d2d6e1" }}>{label}</span>
-              </div>
-            ))}
+            {TONE_PILLS.map((label) => {
+              const isToneAssist = label === "Tone Assist";
+              return (
+                <button
+                  key={label}
+                  onClick={isToneAssist ? () => setToneSuggestion(toneAssistPreview(text)) : undefined}
+                  disabled={isToneAssist && !text.trim()}
+                  className="flex items-center gap-1 rounded-lg border px-2.5 py-1"
+                  style={{ background: "#222631", borderColor: "#d2d6e1", opacity: isToneAssist ? (text.trim() ? 1 : 0.5) : 0.5 }}
+                >
+                  {isToneAssist && <Sparkles size={11} color="#d2d6e1" strokeWidth={2} />}
+                  <span className="text-[12px]" style={{ color: "#d2d6e1" }}>{label}</span>
+                </button>
+              );
+            })}
           </div>
-          <div className="rounded-lg px-3 py-1" style={{ background: "#303644" }}>
-            <span className="text-[16px] font-semibold" style={{ color: "#657084" }}>Send</span>
-          </div>
+          <button
+            onClick={handleSend}
+            disabled={!text.trim()}
+            className="rounded-lg px-3 py-1"
+            style={{ background: text.trim() ? "#fff4a1" : "#303644" }}
+          >
+            <span className="text-[16px] font-semibold" style={{ color: text.trim() ? "#0a0f15" : "#657084" }}>Send</span>
+          </button>
         </div>
       </div>
     </div>
@@ -919,6 +1019,21 @@ function ActionsPanel() {
 }
 
 function WorkChat() {
+  const { params } = useNav();
+  const [activeDM, setActiveDM] = useState(params.dmTarget ?? "Marcus");
+  const [messages, setMessages] = useState<Message[]>(CHAT_MESSAGES);
+
+  const handleSend = (text: string) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `local-${Date.now()}`, sender: "Aria Kim", initials: "AK",
+        avatarBg: "rgba(0,178,150,0.18)", avatarBorder: "#00b296", avatarColor: "#4ecdc4",
+        time: "Now", text, reactions: [], replies: 0, repliesAgo: "", self: true,
+      },
+    ]);
+  };
+
   return (
     <div
       className="absolute flex flex-col rounded-[20px] border border-[#2b2c2d] overflow-hidden"
@@ -928,17 +1043,17 @@ function WorkChat() {
         zIndex: 15,
       }}
     >
-      <WorkChatHeader />
+      <WorkChatHeader activeDM={activeDM} />
       <div className="flex flex-1 min-h-0">
-        <ChannelSidebar />
+        <ChannelSidebar activeDM={activeDM} onSelectDM={setActiveDM} />
         <div className="flex-1 min-w-0 flex flex-col">
           <div className="flex items-center justify-end px-4 py-2 border-b" style={{ borderColor: "#222631" }}>
             <span className="text-[12px]" style={{ color: "#8b95ab" }}>View in my language (KO)</span>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 p-4">
-            {CHAT_MESSAGES.map((m) => <ChatBubble key={m.id} m={m} />)}
+            {messages.map((m) => <ChatBubble key={m.id} m={m} />)}
           </div>
-          <ChatInput />
+          <ChatInput onSend={handleSend} />
         </div>
       </div>
     </div>
@@ -1417,6 +1532,7 @@ const HOLIDAYS = [
 ];
 
 function CalendarView() {
+  const { scheduledMeeting } = useNav();
   return (
     <div
       className="absolute flex overflow-hidden rounded-[20px] border border-[#2b2c2d]"
@@ -1512,7 +1628,10 @@ function CalendarView() {
               {week.map((c, ci) => (
                 <div key={ci} className="flex flex-col gap-1 p-1.5 overflow-hidden" style={{ background: "#0d1420", opacity: c.inMonth ? 1 : 0.4 }}>
                   <span className="text-[11px]" style={{ color: c.inMonth ? "#bfc7d4" : "#4e5669" }}>{c.day}</span>
-                  {c.inMonth && CAL_EVENTS[c.day]?.map((ev) => (
+                  {c.inMonth && [
+                    ...(CAL_EVENTS[c.day] ?? []),
+                    ...(scheduledMeeting && c.day === scheduledMeeting.day ? [{ title: `Meet ${scheduledMeeting.invitee}`, color: "#4ade80" }] : []),
+                  ].map((ev) => (
                     <span key={ev.title} className="truncate rounded px-1 py-0.5 text-[10px] font-medium" style={{ background: ev.color + "33", color: ev.color }}>
                       {ev.title}
                     </span>
@@ -1528,6 +1647,7 @@ function CalendarView() {
 }
 
 function CalendarRightPanel() {
+  const { params, scheduledMeeting, scheduleMeeting } = useNav();
   return (
     <aside
       className="absolute flex flex-col rounded-[20px] border border-[#2b2c2d] overflow-hidden overflow-y-auto"
@@ -1559,6 +1679,23 @@ function CalendarRightPanel() {
       <div className="mx-4 my-3 rounded-xl px-3 py-2 text-[11px] font-semibold text-[#0a0f15]" style={{ background: "#00d4b4" }}>
         09:00–10:00 UTC · Best meeting slot
       </div>
+      {params.inviteeName && (
+        <div className="mx-4 mb-3">
+          {scheduledMeeting?.invitee === params.inviteeName ? (
+            <div className="rounded-xl px-3 py-2 text-[12px] font-semibold text-center" style={{ background: "rgba(74,222,128,0.15)", color: "#4ade80" }}>
+              ✓ Scheduled with {params.inviteeName}
+            </div>
+          ) : (
+            <button
+              onClick={() => scheduleMeeting(params.inviteeName!)}
+              className="w-full rounded-xl py-2 text-[12px] font-semibold text-[#0a0f15]"
+              style={{ background: "#fff4a1" }}
+            >
+              Schedule with {params.inviteeName} at this slot
+            </button>
+          )}
+        </div>
+      )}
       <div className="px-4 py-2">
         <p className="text-[11px] font-semibold tracking-[0.5px] text-[#657084] mb-2">UPCOMING KEY EVENTS</p>
         <div className="flex flex-col gap-2">
@@ -1925,6 +2062,7 @@ function ConstellationCanvas() {
 }
 
 function CoworkRoomModal({ room, onClose }: { room: CoworkRoom; onClose: () => void }) {
+  const [joined, setJoined] = useState(false);
   return (
     <div
       className="absolute inset-0 flex items-center justify-center"
@@ -1964,8 +2102,13 @@ function CoworkRoomModal({ room, onClose }: { room: CoworkRoom; onClose: () => v
           <p className="text-[10px] font-semibold tracking-[0.5px] text-[#657084] mb-1">TODAY'S GOAL</p>
           <p className="text-[13px] leading-relaxed text-[#cecece]">{room.modalGoal}</p>
         </div>
-        <button className="w-full rounded-full py-2.5 text-[14px] font-semibold text-[#0a0f15]" style={{ background: "#fff4a1" }}>
-          {room.cta}
+        <button
+          onClick={() => setJoined(true)}
+          disabled={joined}
+          className="w-full rounded-full py-2.5 text-[14px] font-semibold text-[#0a0f15]"
+          style={{ background: joined ? "#4ade80" : "#fff4a1" }}
+        >
+          {joined ? "Joined ✓" : room.cta}
         </button>
       </div>
     </div>
@@ -2089,6 +2232,9 @@ function CommunityView() {
 }
 
 function CommunityRightPanel() {
+  const [heroCheered, setHeroCheered] = useState(false);
+  const [cheered, setCheered] = useState<Record<string, boolean>>({});
+  const [voted, setVoted] = useState(false);
   return (
     <aside
       className="absolute flex flex-col rounded-[20px] border border-[#2b2c2d] overflow-hidden overflow-y-auto"
@@ -2144,8 +2290,13 @@ function CommunityRightPanel() {
               ))}
             </div>
           </div>
-          <button className="rounded-full border py-2 text-[16px]" style={{ background: "rgba(180,209,243,0.2)", borderColor: "#b4d1f3", color: "#b4d1f3" }}>
-            Send Anonymous Cheer
+          <button
+            onClick={() => setHeroCheered(true)}
+            disabled={heroCheered}
+            className="rounded-full border py-2 text-[16px]"
+            style={{ background: heroCheered ? "rgba(74,222,128,0.15)" : "rgba(180,209,243,0.2)", borderColor: heroCheered ? "#4ade80" : "#b4d1f3", color: heroCheered ? "#4ade80" : "#b4d1f3" }}
+          >
+            {heroCheered ? "✓ Cheer Sent" : "Send Anonymous Cheer"}
           </button>
         </div>
       </div>
@@ -2177,13 +2328,23 @@ function CommunityRightPanel() {
                 <img src={smileyIcon} alt="" style={{ width: 16, height: 16 }} />
               </span>
             </div>
-            <button className="rounded-full border py-1.5 text-[13px] font-semibold" style={{ background: "rgba(194,201,231,0.15)", borderColor: "rgba(194,201,231,0.3)", color: "#c2c9e7" }}>
-              Send Anonymous Cheer
+            <button
+              onClick={() => setCheered((prev) => ({ ...prev, [s.name]: true }))}
+              disabled={!!cheered[s.name]}
+              className="rounded-full border py-1.5 text-[13px] font-semibold"
+              style={{ background: cheered[s.name] ? "rgba(74,222,128,0.15)" : "rgba(194,201,231,0.15)", borderColor: cheered[s.name] ? "#4ade80" : "rgba(194,201,231,0.3)", color: cheered[s.name] ? "#4ade80" : "#c2c9e7" }}
+            >
+              {cheered[s.name] ? "✓ Cheer Sent" : "Send Anonymous Cheer"}
             </button>
           </div>
         ))}
-        <button className="rounded-full border py-2 text-[16px]" style={{ background: "rgba(180,209,243,0.2)", borderColor: "#b4d1f3", color: "#b4d1f3" }}>
-          Vote for Next Speaker
+        <button
+          onClick={() => setVoted(true)}
+          disabled={voted}
+          className="rounded-full border py-2 text-[16px]"
+          style={{ background: voted ? "rgba(74,222,128,0.15)" : "rgba(180,209,243,0.2)", borderColor: voted ? "#4ade80" : "#b4d1f3", color: voted ? "#4ade80" : "#b4d1f3" }}
+        >
+          {voted ? "✓ Voted" : "Vote for Next Speaker"}
         </button>
       </div>
     </aside>
@@ -2203,17 +2364,23 @@ const RIGHT_BY_VIEW: Record<View, () => JSX.Element> = {
 
 export default function App() {
   const [view, setView] = useState<View>("dashboard");
+  const [params, setParams] = useState<NavParams>({});
+  const [scheduledMeeting, setScheduledMeeting] = useState<ScheduledMeeting | null>(null);
+  const navigate = (v: View, p: NavParams = {}) => { setParams(p); setView(v); };
+  const scheduleMeeting = (invitee: string) => setScheduledMeeting({ invitee, day: 23 });
   const Main = MAIN_BY_VIEW[view];
   const Right = RIGHT_BY_VIEW[view];
   return (
-    <div
-      className="relative w-full h-full overflow-hidden select-none"
-      style={{ background: "linear-gradient(to bottom, #06101E 0%, #060713 60%, #04060F 100%)", fontFamily: "Inter, sans-serif" }}
-    >
-      <Main />
-      <Header />
-      <LeftSidebar view={view} onNavigate={setView} />
-      <Right />
-    </div>
+    <NavContext.Provider value={{ navigate, params, scheduledMeeting, scheduleMeeting }}>
+      <div
+        className="relative w-full h-full overflow-hidden select-none"
+        style={{ background: "linear-gradient(to bottom, #06101E 0%, #060713 60%, #04060F 100%)", fontFamily: "Inter, sans-serif" }}
+      >
+        <Main />
+        <Header />
+        <LeftSidebar view={view} onNavigate={(v) => navigate(v)} />
+        <Right />
+      </div>
+    </NavContext.Provider>
   );
 }
