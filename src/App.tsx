@@ -309,13 +309,12 @@ function Chip({ initials, bg, color }: { initials: string; bg: string; color: st
   );
 }
 
-const GOLDEN_LEFT = [
+const GOLDEN_CHIPS = [
   { initials: "AC", bg: "#00b296", color: "#ffffff" },
   { initials: "HL", bg: "#fff4a1", color: "#222631" },
   { initials: "YP", bg: "#b4d1f3", color: "#0a0f15" },
   { initials: "AC", bg: "#fad4ea", color: "#0a0f15" },
-];
-const GOLDEN_RIGHT = [
+  { initials: "HL", bg: "#fff4a1", color: "#222631" },
   { initials: "VE", bg: "#00b296", color: "#ffffff" },
   { initials: "WL", bg: "#fff4a1", color: "#222631" },
 ];
@@ -362,7 +361,7 @@ function GoldenWindowBar() {
     <div className="flex-1 min-w-0" style={{ pointerEvents: "auto" }}>
       <div className="flex justify-between px-0 mb-1">
         {["09:00", "12:00", "15:00", "18:00"].map((t) => (
-          <span key={t} className="text-[13px] text-[#797979]" style={{ fontFamily: "Inter, sans-serif" }}>{t}</span>
+          <span key={t} className="text-[16px] text-[#797979]" style={{ fontFamily: "SUIT, Inter, sans-serif", letterSpacing: "-0.32px" }}>{t}</span>
         ))}
       </div>
       <div ref={wrapRef} className="relative h-12 rounded-full bg-[#131820] border border-[#303644]">
@@ -371,20 +370,17 @@ function GoldenWindowBar() {
           style={{ left: "0%", right: `${rightInset}%`, transition: "right 1s linear" }}
           onMouseEnter={() => setOpen(true)}
         >
+          <span className="text-[#797979] text-[16px] font-semibold whitespace-nowrap" style={{ fontFamily: "SUIT, Inter, sans-serif", letterSpacing: "-0.32px" }}>
+            Golden Window
+          </span>
           <div className="flex items-center">
-            {GOLDEN_LEFT.map((c, i) => <Chip key={i} {...c} />)}
+            {GOLDEN_CHIPS.map((c, i) => <Chip key={i} {...c} />)}
             <div
               className="flex items-center justify-center rounded-full text-white text-[10px] font-semibold border-2 border-white shrink-0"
               style={{ width: 28, height: 28, background: "#00b296" }}
             >
               +5
             </div>
-          </div>
-          <span className="text-[#797979] text-[16px] font-semibold mx-4 whitespace-nowrap" style={{ fontFamily: "SUIT, Inter, sans-serif" }}>
-            Golden Window
-          </span>
-          <div className="flex items-center">
-            {GOLDEN_RIGHT.map((c, i) => <Chip key={i} {...c} />)}
           </div>
         </div>
         {open && <ActiveTeamMembersPopover />}
@@ -457,11 +453,13 @@ function Header() {
         pointerEvents: "none",
       }}
     >
-      <div className="flex items-center gap-2.5 shrink-0" style={{ width: 208 }}>
-        <div className="flex items-center justify-center rounded-xl shrink-0" style={{ width: 28, height: 28, background: "#FFF4A1" }}>
-          <Globe size={16} color="#222631" strokeWidth={2} />
-        </div>
-        <span className="text-[14px] font-semibold text-[#e8edf8] tracking-tight">서비스명</span>
+      <div className="flex items-center justify-center shrink-0" style={{ width: 208 }}>
+        <span
+          className="whitespace-nowrap"
+          style={{ fontFamily: "Futura, 'Trebuchet MS', sans-serif", fontWeight: 500, fontSize: 42, color: "#fff4a1", letterSpacing: "-0.462px", lineHeight: 1.5 }}
+        >
+          Orbit
+        </span>
       </div>
 
       <GoldenWindowBar />
@@ -471,9 +469,9 @@ function Header() {
           className="flex flex-1 items-center gap-2 px-4 rounded-full border"
           style={{ height: 48, background: "#131820", borderColor: "#303644" }}
         >
-          <span className="text-[16px] text-[#e0e5eb]">17 June</span>
+          <span className="text-[16px] text-[#e0e5eb]" style={{ fontFamily: "SUIT, Inter, sans-serif", letterSpacing: "-0.32px" }}>17 June</span>
           <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.2)" }} />
-          <span className="text-[16px] text-[#e0e5eb]">09:15 (KST)</span>
+          <span className="text-[16px] text-[#e0e5eb]" style={{ fontFamily: "SUIT, Inter, sans-serif", letterSpacing: "-0.32px" }}>09:15 (KST)</span>
         </div>
         <div
           className="flex items-center justify-center rounded-full border shrink-0"
