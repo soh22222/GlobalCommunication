@@ -798,6 +798,45 @@ const CHAT_MESSAGES: Message[] = [
 ];
 
 function ChatBubble({ m }: { m: Message }) {
+  if (m.self) {
+    return (
+      <div className="flex items-start gap-2 w-full justify-end">
+        <div className="flex-1 min-w-0 flex flex-col items-end">
+          <div className="flex items-center gap-2 py-1">
+            <span className="text-[12px]" style={{ color: "#6b7a99" }}>{m.time}</span>
+            <span className="text-[14px] font-semibold" style={{ color: "#e2e8f4" }}>You</span>
+          </div>
+          <div className="rounded-tl-xl rounded-bl-xl rounded-br-xl px-4 py-3" style={{ borderTopRightRadius: 4, background: "#00b296" }}>
+            <p className="text-[16px] leading-[22px] font-medium" style={{ color: "#04120e" }}>{m.text}</p>
+          </div>
+          <div className="flex items-end justify-end gap-0.5 py-2">
+            {m.reactions.map((r, i) => (
+              <div key={i} className="flex items-center gap-1 rounded h-5 px-1" style={{ background: "#29292d", color: "#a8b4cc" }}>
+                <span className="text-[11px]">{r.emoji}</span>
+                <span className="text-[11px] font-medium">{r.count}</span>
+              </div>
+            ))}
+            <div className="flex items-center justify-center rounded h-5 px-1" style={{ background: "#29292d" }}>
+              <Smile size={16} color="#a8b4cc" strokeWidth={1.8} />
+            </div>
+          </div>
+          {m.replies > 0 && (
+            <div className="flex items-center justify-end gap-1 h-6">
+              <span className="text-[13px] font-semibold" style={{ color: "#4ecdc4" }}>💬 {m.replies} replies</span>
+              <span className="text-[12px]" style={{ color: "#6b7a99" }}>{m.repliesAgo}</span>
+            </div>
+          )}
+        </div>
+        <div
+          className="rounded-full shrink-0 flex items-center justify-center"
+          style={{ width: 32, height: 32, background: m.avatarBg, border: `1.5px solid ${m.avatarBorder}` }}
+        >
+          <span className="text-[10px] font-semibold" style={{ color: m.avatarColor }}>{m.initials}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-start gap-2 w-full">
       <div
