@@ -324,32 +324,18 @@ const GOLDEN_CHIPS = [
   { initials: "WL", bg: "#fff4a1", color: "#222631" },
 ];
 
-// Live KST clock (minutes since midnight, fractional for smooth animation).
-function useKstMinutes() {
-  const [minutes, setMinutes] = useState(() => kstMinutesNow());
-  useEffect(() => {
-    const id = setInterval(() => setMinutes(kstMinutesNow()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return minutes;
-}
-function kstMinutesNow() {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Seoul", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit",
-  }).formatToParts(new Date());
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
-  return get("hour") * 60 + get("minute") + get("second") / 60;
-}
-
 const WORK_START_MIN = 9 * 60; // 09:00
 const WORK_END_MIN = 18 * 60; // 18:00
 
 function GoldenWindowBar() {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const nowMin = useKstMinutes();
   // Bar starts full at 09:00 and shrinks from the right edge, hitting 0 width at 18:00.
-  const elapsed = Math.min(Math.max(nowMin - WORK_START_MIN, 0), WORK_END_MIN - WORK_START_MIN);
+  // Uses the app's fixed reference "now" (09:15 KST, REF_LOCAL_MIN — same constant the
+  // day/night terminator uses) instead of the visitor's real wall-clock time. The bar
+  // was previously live-clock-driven, which meant it rendered fully collapsed (0 width,
+  // looking broken) for anyone viewing outside 09:00-18:00 KST real time.
+  const elapsed = Math.min(Math.max(REF_LOCAL_MIN - WORK_START_MIN, 0), WORK_END_MIN - WORK_START_MIN);
   const rightInset = (elapsed / (WORK_END_MIN - WORK_START_MIN)) * 100;
 
   // Opens on hover; once open, only closes when the user clicks outside it.
