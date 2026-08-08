@@ -316,6 +316,7 @@ function Chip({ initials, bg, color }: { initials: string; bg: string; color: st
 
 const GOLDEN_CHIPS = [
   { initials: "AC", bg: "#00b296", color: "#ffffff" },
+  { initials: "MC", bg: "#4D9FFF", color: "#ffffff" },
   { initials: "HL", bg: "#fff4a1", color: "#222631" },
   { initials: "YP", bg: "#b4d1f3", color: "#0a0f15" },
   { initials: "AC", bg: "#fad4ea", color: "#0a0f15" },
@@ -561,6 +562,7 @@ function LeftSidebar({ view, onNavigate }: { view: View; onNavigate: (v: View) =
 
 // Mirrors Figma node 813:26278 — the full Time Zone roster.
 const TZ_MEMBERS = [
+  { initials: "MC", name: "Marcus",   dept: "Finance",     city: "Paris",       offset: "−7h",  time: "02:15" },
   { initials: "MY", name: "Maya",     dept: "Engineering", city: "Berlin",      offset: "+1h",  time: "10:15" },
   { initials: "AC", name: "Aria",     dept: "Design",      city: "Vancouver",   offset: "+16h", time: "09:15" },
   { initials: "MI", name: "Mika",     dept: "Finance",     city: "Tokyo",       offset: "±0h",  time: "09:15" },
