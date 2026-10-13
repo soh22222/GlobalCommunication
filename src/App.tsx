@@ -1450,7 +1450,8 @@ function GlobeView() {
     if (!wrapper || !canvas || !svg) return;
 
     const syncSize = () => {
-      const { width, height } = wrapper.getBoundingClientRect();
+      // Layout size, not getBoundingClientRect(): the app root is CSS-scaled (see index.html)
+      const width = wrapper.offsetWidth, height = wrapper.offsetHeight;
       const dpr = window.devicePixelRatio || 1;
       canvas.width  = width  * dpr;
       canvas.height = height * dpr;

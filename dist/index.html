@@ -31,6 +31,9 @@
       /* Hide every scrollbar app-wide; areas still scroll by wheel/touch/drag */
       * { scrollbar-width: none; -ms-overflow-style: none; }
       *::-webkit-scrollbar { display: none; }
+      /* Render the whole app at 90%: lay it out on a 1/0.9 larger canvas, then scale down */
+      body { overflow: hidden; }
+      #root { width: calc(100% / 0.9); height: calc(100% / 0.9); transform: scale(0.9); transform-origin: 0 0; }
     </style>
   </head>
   <body>
