@@ -68,6 +68,13 @@ A/B 테스트용으로 공유 가능한 링크로 배포한 것.
     없었음 → `soh22222` 전용 새 SSH 키(`~/.ssh/id_ed25519_soh22222`) 생성해서 그 계정으로 등록 후
     push 완료. 커밋 작성자도 `soh22222`로 정리. `hiri22` 키는 요청에 따라 삭제하지 않고 보존.
 
+15. **홈화면(Dashboard) UI 개선**: Time Zone 패널을 기준 시각(09:15 KST)에서 실제 6월 UTC 오프셋(DST 반영)으로
+    시간/상태를 계산하도록 재구성 — "Working now / Starting soon / Off hours" 섹션, 상태 dot·pill(Overtime 등),
+    검색 실제 동작, 중복 인물(Aria/Priya) 정리, "지금 업무 중인 지역" 시간·타임존 수정. Golden Window 바에
+    남은 시간 표시와 펄스 dot 추가, 팝오버는 업무 중/곧 시작 인원만 표시. 지구본 하단에 마커 범례 추가.
+    프로필 시각(16:22 → 09:15) 헤더와 일치. GitHub Actions(`.github/workflows/deploy.yml`)로 main push 시
+    surge 자동 배포 (repo secret `SURGE_LOGIN`, `SURGE_TOKEN` 필요).
+
 ## 접근하지 못한 것 (미해결)
 
 - Figma 파일 `yhtMortoxcnoFoSTwxr1pp` (Thinking-Process_WIP)는 **Dev Mode 접근 권한 문제로 계속

@@ -338,6 +338,8 @@ function GoldenWindowBar() {
   // looking broken) for anyone viewing outside 09:00-18:00 KST real time.
   const elapsed = Math.min(Math.max(REF_LOCAL_MIN - WORK_START_MIN, 0), WORK_END_MIN - WORK_START_MIN);
   const rightInset = (elapsed / (WORK_END_MIN - WORK_START_MIN)) * 100;
+  const remaining = WORK_END_MIN - WORK_START_MIN - elapsed;
+  const remainingLabel = `${Math.floor(remaining / 60)}h ${String(remaining % 60).padStart(2, "0")}m left`;
 
   // Opens on hover; once open, only closes when the user clicks outside it.
   useEffect(() => {
@@ -357,13 +359,22 @@ function GoldenWindowBar() {
         ))}
       </div>
       <div ref={wrapRef} className="relative h-12 rounded-full bg-[#131820] border border-[#303644]">
+        {/* Hour ticks on the empty track (visible once the window has shrunk past them) */}
+        {[1, 2].map((i) => (
+          <div key={i} className="absolute top-1/2 h-3 w-px -translate-y-1/2 bg-[#303644]" style={{ left: `${(i / 3) * 100}%` }} />
+        ))}
         <div
-          className="absolute top-0 h-full bg-white rounded-full flex items-center justify-between px-6 overflow-hidden cursor-pointer"
-          style={{ left: "0%", right: `${rightInset}%`, transition: "right 1s linear" }}
+          className="absolute top-0 h-full rounded-full shadow-[0_0_24px_rgba(255,244,161,0.18)] flex items-center justify-between px-6 overflow-hidden cursor-pointer"
+          style={{ left: "0%", right: `${rightInset}%`, transition: "right 1s linear", background: "linear-gradient(90deg, #ffffff 0%, #fffbe0 100%)" }}
           onMouseEnter={() => setOpen(true)}
         >
-          <span className="text-[#797979] text-[16px] font-semibold whitespace-nowrap" style={{ fontFamily: "SUIT, Inter, sans-serif", letterSpacing: "-0.32px" }}>
-            Golden Window
+          <span className="flex items-center gap-2 whitespace-nowrap" style={{ fontFamily: "SUIT, Inter, sans-serif", letterSpacing: "-0.32px" }}>
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00b296] opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#00b296]" />
+            </span>
+            <span className="text-[#222631] text-[16px] font-semibold">Golden Window</span>
+            <span className="text-[#8a8f99] text-[13px] font-medium">{remainingLabel}</span>
           </span>
           <div className="flex items-center">
             {GOLDEN_CHIPS.map((c, i) => <Chip key={i} {...c} />)}
@@ -394,31 +405,13 @@ function ActiveTeamMembersPopover({ onClose }: { onClose: () => void }) {
         background: "#1a1b1d", boxShadow: "0 16px 40px rgba(0,0,0,0.5)", zIndex: 40,
       }}
     >
-      <div className="border-b border-[rgba(77,159,255,0.12)] px-4 py-4 shrink-0">
-        <span className="text-white text-[16px] font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>Active Team Members</span>
+      <div className="flex items-center justify-between border-b border-[rgba(77,159,255,0.12)] px-4 py-4 shrink-0">
+        <span className="text-white text-[16px] font-semibold">Active Team Members</span>
+        <span className="text-[11px] text-[#5a7099]">Click to schedule</span>
       </div>
-      <div className="flex-1 overflow-y-auto flex flex-col">
-        {TZ_MEMBERS.map((m, i) => (
-          <button
-            key={i}
-            onClick={() => { navigate("calendar", { inviteeName: m.name }); onClose(); }}
-            className="flex items-center justify-between px-4 py-3 border-b border-[rgba(77,159,255,0.06)] text-left"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <Avatar initials={m.initials} color={AVATAR_COLORS[i % AVATAR_COLORS.length]} online={true} />
-              <div className="min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="text-[14px] font-semibold text-[#e8edf8]" style={{ fontFamily: "Inter, sans-serif" }}>{m.name}</span>
-                  <span className="text-[12px] text-[#55585f]" style={{ fontFamily: "Inter, sans-serif" }}>{m.dept}</span>
-                </div>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-[12px] text-[#55585f]" style={{ fontFamily: "Inter, sans-serif" }}>{m.city}</span>
-                  <span className="text-[10px] text-[#55585f] font-semibold px-1.5 rounded-full" style={{ background: "#252932", lineHeight: "16px" }}>{m.offset}</span>
-                </div>
-              </div>
-            </div>
-            <span className="text-[24px] font-bold text-[#e8edf8] shrink-0" style={{ fontFamily: "Inter, sans-serif" }}>{m.time}</span>
-          </button>
+      <div className="flex-1 overflow-y-auto flex flex-col py-1">
+        {TZ_MEMBERS.filter((m) => m.status !== "off").map((m) => (
+          <MemberRow key={m.name} m={m} onClick={() => { navigate("calendar", { inviteeName: m.name }); onClose(); }} />
         ))}
       </div>
     </div>
@@ -549,7 +542,7 @@ function LeftSidebar({ view, onNavigate }: { view: View; onNavigate: (v: View) =
             <div className="flex items-center gap-1 mt-0.5">
               <span className="text-[12px] text-[#55585f]" style={{ fontFamily: "Inter, sans-serif" }}>KST</span>
               <span className="text-[10px] text-[#55585f] font-semibold px-1 rounded-full" style={{ background: "#252932", lineHeight: "16px" }}>
-                16:22
+                09:15
               </span>
             </div>
           </div>
@@ -561,36 +554,144 @@ function LeftSidebar({ view, onNavigate }: { view: View; onNavigate: (v: View) =
 }
 
 // Mirrors Figma node 813:26278 — the full Time Zone roster.
-const TZ_MEMBERS = [
-  { initials: "MC", name: "Marcus",   dept: "Finance",     city: "Paris",       offset: "−7h",  time: "02:15" },
-  { initials: "MY", name: "Maya",     dept: "Engineering", city: "Berlin",      offset: "+1h",  time: "10:15" },
-  { initials: "AC", name: "Aria",     dept: "Design",      city: "Vancouver",   offset: "+16h", time: "09:15" },
-  { initials: "MI", name: "Mika",     dept: "Finance",     city: "Tokyo",       offset: "±0h",  time: "09:15" },
-  { initials: "PR", name: "Priya",    dept: "People",      city: "New York",    offset: "−13h", time: "20:15" },
-  { initials: "AC", name: "Aria",     dept: "Design",      city: "Vancouver",   offset: "−16h", time: "17:15" },
-  { initials: "LI", name: "Lina",     dept: "Data",        city: "Singapore",   offset: "−1h",  time: "08:15" },
-  { initials: "PR", name: "Priya",    dept: "People",      city: "London",      offset: "−9h",  time: "00:15" },
-  { initials: "KT", name: "Kenji",    dept: "Product",     city: "Osaka",       offset: "±0h",  time: "09:15" },
-  { initials: "ML", name: "Mei",      dept: "Data",        city: "Shanghai",    offset: "−1h",  time: "08:15" },
-  { initials: "RS", name: "Raj",      dept: "Operations",  city: "Mumbai",      offset: "−4h",  time: "05:45" },
-  { initials: "EV", name: "Elena",    dept: "Design",      city: "Moscow",      offset: "−6h",  time: "03:15" },
-  { initials: "AK", name: "Anna",     dept: "People",      city: "Stockholm",   offset: "−7h",  time: "02:15" },
-  { initials: "AO", name: "Amara",    dept: "Marketing",   city: "Lagos",       offset: "−8h",  time: "01:15" },
-  { initials: "KA", name: "Kwame",    dept: "Support",     city: "Accra",       offset: "−9h",  time: "00:15" },
-  { initials: "LR", name: "Lucas",    dept: "Finance",     city: "São Paulo",   offset: "−12h", time: "21:15" },
-  { initials: "LO", name: "Liam",     dept: "Engineering", city: "Toronto",     offset: "−13h", time: "20:15" },
-  { initials: "IG", name: "Isabella", dept: "Legal",       city: "Mexico City", offset: "−14h", time: "19:15" },
-];
-const AVATAR_COLORS = ["#4D9FFF", "#8b7fe8", "#00b296", "#e07bc4", "#f2a94e", "#4ecdc4"];
+// Each entry carries its real June UTC offset (DST applied); local time,
+// the "vs KST" offset and availability are all derived from the app's fixed
+// reference "now" (09:15 KST, REF_LOCAL_MIN), so the panel can never drift
+// out of sync with the header clock again.
+type MemberStatus = "working" | "soon" | "overtime" | "off";
+type TzMember = {
+  initials: string; name: string; dept: string; city: string; utc: number;
+  offset: string; time: string; status: MemberStatus;
+};
 
+const REF_UTC_MIN = REF_LOCAL_MIN - REF_UTC_OFFSET * 60; // 00:15 UTC
+const SOON_WINDOW_MIN = 60; // "starting soon" = workday begins within the hour
+
+function fmtOffset(diffH: number) {
+  if (diffH === 0) return "±0h";
+  return `${diffH > 0 ? "+" : "−"}${Math.abs(diffH)}h`;
+}
+
+function makeMember(initials: string, name: string, dept: string, city: string, utc: number, overtime = false): TzMember {
+  const local = (((REF_UTC_MIN + utc * 60) % 1440) + 1440) % 1440;
+  const time = `${String(Math.floor(local / 60)).padStart(2, "0")}:${String(local % 60).padStart(2, "0")}`;
+  const status: MemberStatus = overtime ? "overtime"
+    : local >= WORK_START_MIN && local < WORK_END_MIN ? "working"
+    : local >= WORK_START_MIN - SOON_WINDOW_MIN && local < WORK_START_MIN ? "soon"
+    : "off";
+  return { initials, name, dept, city, utc, offset: fmtOffset(utc - REF_UTC_OFFSET), time, status };
+}
+
+const STATUS_ORDER: Record<MemberStatus, number> = { working: 0, overtime: 1, soon: 2, off: 3 };
+
+const TZ_MEMBERS: TzMember[] = [
+  // The one night-owl on the whole globe — matches the globe's Paris marker.
+  makeMember("MC", "Marcus",   "Finance",     "Paris",       2, true),
+  makeMember("MY", "Maya",     "Engineering", "Berlin",      2),
+  makeMember("AV", "Ava",      "Design",      "Vancouver",  -7),
+  makeMember("MI", "Mika",     "Finance",     "Tokyo",       9),
+  makeMember("PR", "Priya",    "People",      "New York",   -4),
+  makeMember("LI", "Lina",     "Data",        "Singapore",   8),
+  makeMember("OW", "Oliver",   "Product",     "London",      1),
+  makeMember("KT", "Kenji",    "Product",     "Osaka",       9),
+  makeMember("ML", "Mei",      "Data",        "Shanghai",    8),
+  makeMember("RS", "Raj",      "Operations",  "Mumbai",      5.5),
+  makeMember("EV", "Elena",    "Design",      "Moscow",      3),
+  makeMember("AK", "Anna",     "People",      "Stockholm",   2),
+  makeMember("AO", "Amara",    "Marketing",   "Lagos",       1),
+  makeMember("KA", "Kwame",    "Support",     "Accra",       0),
+  makeMember("LR", "Lucas",    "Finance",     "São Paulo",  -3),
+  makeMember("LO", "Liam",     "Engineering", "Toronto",    -4),
+  makeMember("IG", "Isabella", "Legal",       "Mexico City", -6),
+].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+
+const AVATAR_COLORS = ["#4D9FFF", "#8b7fe8", "#00b296", "#e07bc4", "#f2a94e", "#4ecdc4"];
+const avatarColor = (name: string) => AVATAR_COLORS[Math.abs(hashStr(name)) % AVATAR_COLORS.length];
+
+const STATUS_STYLE: Record<MemberStatus, { dot: string; label: string; pillBg: string; pillFg: string }> = {
+  working:  { dot: "#4ade80", label: "Working",    pillBg: "rgba(74,222,128,0.12)",  pillFg: "#4ade80" },
+  overtime: { dot: "#f2a94e", label: "Overtime",   pillBg: "rgba(242,169,78,0.14)",  pillFg: "#f2a94e" },
+  soon:     { dot: "#b4d1f3", label: "Starts soon", pillBg: "rgba(180,209,243,0.12)", pillFg: "#b4d1f3" },
+  off:      { dot: "#3a3f4b", label: "Off hours",  pillBg: "#252932",                pillFg: "#657084" },
+};
+
+const isAvailable = (m: TzMember) => m.status === "working" || m.status === "overtime";
+
+// "Where the team is working right now" — the viewer's own Seoul plus every
+// city with someone inside their workday (or pulling overtime).
+const TZ_ABBR: Record<string, string> = {
+  Seoul: "KST", Tokyo: "JST", Osaka: "JST", Vancouver: "PDT", Paris: "CEST",
+};
 const ACTIVE_REGIONS = [
-  { city: "Seoul",     time: "16:21", tz: "KST", color: "#4ade80", textColor: "#4d9fff" },
-  { city: "New York",  time: "09:21", tz: "CET", color: "#4ade80", textColor: "#00d4b4" },
-  { city: "Vancouver", time: "12:51", tz: "IST", color: "#4ade80", textColor: "#a78bfa" },
-  { city: "Tokyo",     time: "16:21", tz: "JST", color: "#4ade80", textColor: "#f472b6" },
-];
+  { city: "Seoul", time: makeMember("", "", "", "", REF_UTC_OFFSET).time, status: "working" as MemberStatus },
+  ...TZ_MEMBERS.filter(isAvailable).map(({ city, time, status }) => ({ city, time, status })),
+].map((r) => ({ ...r, tz: TZ_ABBR[r.city] ?? "" }));
+
+// One roster row — shared by the Time Zone panel and the Golden Window popover.
+function MemberRow({ m, onClick }: { m: TzMember; onClick?: () => void }) {
+  const s = STATUS_STYLE[m.status];
+  const dim = m.status === "off";
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag
+      onClick={onClick}
+      className="group flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors hover:bg-[rgba(194,201,231,0.05)]"
+    >
+      <div className="flex min-w-0 items-center gap-3" style={{ opacity: dim ? 0.55 : 1 }}>
+        <div className="relative shrink-0" style={{ width: 28, height: 28 }}>
+          <Avatar initials={m.initials} color={avatarColor(m.name)} />
+          <div className="absolute rounded-full border border-[#1a1b1d]" style={{ width: 8, height: 8, background: s.dot, right: -1, bottom: -1 }} />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1">
+            <span className="truncate text-[14px] font-semibold text-[#e8edf8]">{m.name}</span>
+            <span className="truncate text-[12px] text-[#55585f]">{m.dept}</span>
+          </div>
+          <div className="mt-0.5 flex items-center gap-1">
+            <span className="truncate text-[12px] text-[#657084]">{m.city}</span>
+            <span className="rounded-full px-1.5 text-[10px] font-semibold text-[#657084]" style={{ background: "#252932", lineHeight: "16px" }}>{m.offset}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-0.5">
+        <span
+          className="text-[20px] font-semibold leading-none tracking-[-0.4px]"
+          style={{ color: dim ? "#55585f" : "#e8edf8", fontVariantNumeric: "tabular-nums" }}
+        >
+          {m.time}
+        </span>
+        {!dim && (
+          <span className="rounded-full px-1.5 text-[9px] font-semibold" style={{ background: s.pillBg, color: s.pillFg, lineHeight: "15px" }}>
+            {s.label}
+          </span>
+        )}
+      </div>
+    </Tag>
+  );
+}
+
+function SectionLabel({ label, count }: { label: string; count: number }) {
+  return (
+    <div className="sticky top-0 z-10 flex items-center justify-between px-4 pb-1.5 pt-3" style={{ background: "rgba(26,27,29,0.97)" }}>
+      <span className="text-[10px] font-semibold uppercase tracking-[0.6px] text-[#5a7099]">{label}</span>
+      <span className="text-[10px] font-semibold text-[#3f4a5e]">{count}</span>
+    </div>
+  );
+}
 
 function RightSidebar() {
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const matches = TZ_MEMBERS.filter((m) =>
+    !q || [m.name, m.dept, m.city].some((f) => f.toLowerCase().includes(q))
+  );
+  const sections = [
+    { label: "Working now", members: matches.filter(isAvailable) },
+    { label: "Starting soon", members: matches.filter((m) => m.status === "soon") },
+    { label: "Off hours", members: matches.filter((m) => m.status === "off") },
+  ];
+  const availableCount = TZ_MEMBERS.filter(isAvailable).length;
+
   return (
     <aside
       className="absolute flex flex-col rounded-[20px] border border-[#2b2c2d] overflow-hidden"
@@ -602,46 +703,51 @@ function RightSidebar() {
         pointerEvents: "auto",
       }}
     >
-      <div className="border-b border-[rgba(77,159,255,0.12)] px-4 py-4">
-        <span className="text-white text-[16px] font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>Time Zone</span>
+      <div className="flex items-center justify-between border-b border-[rgba(77,159,255,0.12)] px-4 py-4">
+        <span className="text-white text-[16px] font-semibold">Time Zone</span>
+        <span className="flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: "rgba(74,222,128,0.1)", color: "#4ade80" }}>
+          <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" />
+          {availableCount} working
+        </span>
       </div>
       <div className="px-3 py-2">
-        <div className="flex items-center gap-2 bg-[#252932] rounded-xl px-3 py-1.5">
+        <label className="flex items-center gap-2 rounded-xl border border-transparent bg-[#252932] px-3 py-1.5 focus-within:border-[rgba(180,209,243,0.35)]">
           <Search size={14} color="#5a7099" strokeWidth={1.8} />
-          <span className="text-[12px] text-[#5a7099]" style={{ fontFamily: "Inter, sans-serif" }}>Search team members...</span>
-        </div>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search team members..."
+            className="w-full bg-transparent text-[12px] text-[#e8edf8] placeholder-[#5a7099] outline-none"
+          />
+          {query && (
+            <button onClick={() => setQuery("")} aria-label="Clear search" className="shrink-0">
+              <X size={12} color="#5a7099" />
+            </button>
+          )}
+        </label>
       </div>
-      <div className="flex-1 overflow-y-auto flex flex-col">
-        {TZ_MEMBERS.map((m, i) => (
-          <div key={i} className="flex items-center justify-between px-4 py-3 border-b border-[rgba(77,159,255,0.06)]">
-            <div className="flex items-center gap-3 min-w-0">
-              <Avatar initials={m.initials} color={AVATAR_COLORS[i % AVATAR_COLORS.length]} online={true} />
-              <div className="min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="text-[14px] font-semibold text-[#e8edf8]" style={{ fontFamily: "Inter, sans-serif" }}>{m.name}</span>
-                  <span className="text-[12px] text-[#55585f]" style={{ fontFamily: "Inter, sans-serif" }}>{m.dept}</span>
-                </div>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-[12px] text-[#55585f]" style={{ fontFamily: "Inter, sans-serif" }}>{m.city}</span>
-                  <span className="text-[10px] text-[#55585f] font-semibold px-1.5 rounded-full" style={{ background: "#252932", lineHeight: "16px" }}>{m.offset}</span>
-                </div>
-              </div>
-            </div>
-            <span className="text-[24px] font-bold text-[#e8edf8] shrink-0" style={{ fontFamily: "Inter, sans-serif" }}>{m.time}</span>
+      <div className="flex-1 overflow-y-auto flex flex-col pb-2">
+        {sections.map(({ label, members }) => members.length > 0 && (
+          <div key={label}>
+            <SectionLabel label={label} count={members.length} />
+            {members.map((m) => <MemberRow key={m.name} m={m} />)}
           </div>
         ))}
+        {matches.length === 0 && (
+          <p className="px-4 py-6 text-center text-[12px] text-[#55585f]">No one matches “{query}”</p>
+        )}
       </div>
       <div className="border-t border-[rgba(77,159,255,0.12)] px-4 py-4">
-        <p className="text-[10px] font-semibold tracking-[0.5px] uppercase mb-2" style={{ color: "#5a7099", fontFamily: "Inter, sans-serif" }}>
+        <p className="text-[10px] font-semibold tracking-[0.5px] uppercase mb-2 text-[#5a7099]">
           지금 업무 중인 지역
         </p>
         <div className="flex flex-col gap-1.5">
-          {ACTIVE_REGIONS.map(({ city, time, tz, color, textColor }) => (
+          {ACTIVE_REGIONS.map(({ city, time, tz, status }) => (
             <div key={city} className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
-              <span className="flex-1 text-[10px] text-[#e8edf8]" style={{ fontFamily: "Inter, sans-serif" }}>{city}</span>
-              <span className="text-[10px] font-medium" style={{ color: textColor, fontFamily: "Inter, sans-serif" }}>{time}</span>
-              <span className="text-[9px] text-[#5a7099]" style={{ fontFamily: "Inter, sans-serif" }}>{tz}</span>
+              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: STATUS_STYLE[status].dot }} />
+              <span className="flex-1 text-[11px] text-[#e8edf8]">{city}</span>
+              <span className="text-[11px] font-medium text-[#c2c9e7]" style={{ fontVariantNumeric: "tabular-nums" }}>{time}</span>
+              <span className="w-9 text-right text-[9px] text-[#5a7099]">{tz}</span>
             </div>
           ))}
         </div>
@@ -1483,6 +1589,32 @@ function GlobeView() {
       >
         {hoveredMarker && <PersonCard m={hoveredMarker} />}
       </div>
+
+      <GlobeLegend />
+    </div>
+  );
+}
+
+const ACTIVE_CITY_COUNT = MARKERS.filter((m) => m.color === ACTIVE_COLOR).length;
+
+// Floating legend under the globe — explains what the marker colours mean
+// and how to interact, sitting between the two sidebars.
+function GlobeLegend() {
+  return (
+    <div
+      className="pointer-events-none absolute flex items-center gap-4 rounded-full border border-[#2b2c2d] px-4 py-2 text-[12px] text-[#9aa3b5]"
+      style={{ left: "50%", bottom: 28, transform: "translateX(-50%)", background: "rgba(19,24,32,0.78)", backdropFilter: "blur(12px)", zIndex: 15, whiteSpace: "nowrap" }}
+    >
+      <span className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full" style={{ background: ACTIVE_COLOR, boxShadow: `0 0 8px ${ACTIVE_COLOR}` }} />
+        Working now <b className="font-semibold text-[#e8edf8]">{ACTIVE_CITY_COUNT}</b> cities
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full border border-[#55585f]" style={{ background: INACTIVE_COLOR }} />
+        Off hours <b className="font-semibold text-[#e8edf8]">{MARKERS.length - ACTIVE_CITY_COUNT}</b>
+      </span>
+      <span className="h-3 w-px bg-[#303644]" />
+      <span className="text-[#657084]">Drag to rotate · Scroll to zoom</span>
     </div>
   );
 }
