@@ -33,6 +33,12 @@ For active development, re-run `npm run build` after each change (or wire up
 
 ## Deploying
 
+Pushing to `main` runs `.github/workflows/deploy.yml`, which builds and publishes
+`dist/` to GitHub Pages (https://soh22222.github.io/GlobalCommunication/) and, if the
+`SURGE_LOGIN`/`SURGE_TOKEN` secrets are set, to surge.sh as well.
+
+Manual alternative:
+
 Any static host works since `dist/` is plain HTML/JS. This project has been
 deployed to surge.sh via:
 

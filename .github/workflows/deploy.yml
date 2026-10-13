@@ -1,12 +1,16 @@
-# Build and deploy dist/ to surge.sh on every push to main.
-# One-time setup: add repo secrets SURGE_LOGIN (surge account email) and
-# SURGE_TOKEN (from `npx surge token`). Without them the deploy step is skipped.
-name: Deploy to surge
+# Build dist/ on every push to main and publish it:
+#  - GitHub Pages: pushed to the gh-pages branch (https://soh22222.github.io/GlobalCommunication/)
+#  - surge.sh: only when repo secrets SURGE_LOGIN (surge account email) and
+#    SURGE_TOKEN (from `npx surge token`) are set; otherwise skipped.
+name: Deploy
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   deploy:
@@ -21,9 +25,19 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm run build
-      - name: Deploy
+      - name: Deploy to GitHub Pages
+        run: |
+          touch dist/.nojekyll
+          cd dist
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Deploy ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+      - name: Deploy to surge
         if: env.SURGE_TOKEN != ''
         run: npx --yes surge@0.23.1 ./dist globe-ab-proto-protopie.surge.sh
       - name: Skip notice
         if: env.SURGE_TOKEN == ''
-        run: echo "::warning::SURGE_TOKEN secret not set — build passed, deploy skipped."
+        run: echo "::notice::SURGE_TOKEN secret not set — surge deploy skipped (GitHub Pages still updated)."
